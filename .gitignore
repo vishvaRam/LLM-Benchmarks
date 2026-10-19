@@ -1,5 +1,10 @@
 .venv
+.venv-win
 .ruff_cache
 build/
+dist/
 releases/
-LLM_Benchmarking_Studio.spec
+LLM_Benchmarking_Studio_v1.0.0.spec
+**/__pycache__/
+*.py[cod]
+*$py.class

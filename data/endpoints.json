@@ -10,7 +10,7 @@
         {
           "id": "Vishva007/Qwen3.5-9B-NVFP4",
           "display_name": "Vishva007/Qwen3.5-9B-NVFP4",
-          "is_vlm": false,
+          "is_vlm": true,
           "context_window": 32768,
           "supports_thinking": true
         }

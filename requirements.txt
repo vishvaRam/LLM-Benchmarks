@@ -6,3 +6,7 @@ numpy
 python-multipart
 httpx
 pyinstaller
+pillow
+PyQt6
+pywebview
+PyGObject

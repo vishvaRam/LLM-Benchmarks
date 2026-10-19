@@ -5,18 +5,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LLM & VLM Benchmark Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap"
+    rel="stylesheet">
+  <link rel="icon" type="image/png" href="/assets/app_icon.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['"Open Sans"', 'sans-serif'],
+          },
           colors: {
             surface: {
               900: '#0b0f17',
               800: '#111827',
               700: '#1f2937',
-              600: '#374151',
+              600: '#374151'
             }
           }
         }
@@ -291,7 +299,8 @@
   </main>
 
   <!-- Modal: Manage / Save Endpoints Directly to JSON -->
-  <div id="configModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+  <div id="configModal"
+    class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
     <div class="bg-surface-800 border border-surface-700 rounded-lg max-w-md w-full p-6 space-y-4 shadow-xl">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-bold text-white uppercase tracking-wider">Save Endpoint to JSON</h3>
@@ -308,36 +317,44 @@
       <div class="space-y-3">
         <div>
           <label class="block text-xs text-slate-400 mb-1">ID (unique identifier)</label>
-          <input type="text" id="epId" placeholder="e.g. vllm-prod" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+          <input type="text" id="epId" placeholder="e.g. vllm-prod"
+            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
         </div>
         <div>
           <label class="block text-xs text-slate-400 mb-1">Display Name</label>
-          <input type="text" id="epName" placeholder="e.g. Production vLLM Instance" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+          <input type="text" id="epName" placeholder="e.g. Production vLLM Instance"
+            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
         </div>
         <div>
           <label class="block text-xs text-slate-400 mb-1">Base URL</label>
-          <input type="text" id="epBaseUrl" placeholder="http://localhost:8000/v1" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+          <input type="text" id="epBaseUrl" placeholder="http://localhost:8000/v1"
+            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
         </div>
         <div>
           <label class="block text-xs text-slate-400 mb-1">API Key</label>
-          <input type="password" id="epApiKey" placeholder="none" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+          <input type="password" id="epApiKey" placeholder="none"
+            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
         </div>
         <div>
           <label class="block text-xs text-slate-400 mb-1">Models (comma-separated)</label>
-          <input type="text" id="epModels" placeholder="qwen3.8-27b-fp8, llama-3.2-11b" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+          <input type="text" id="epModels" placeholder="qwen3.8-27b-fp8, llama-3.2-11b"
+            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-surface-700/60">
           <div>
             <label class="block text-xs text-slate-400 mb-1">Context Window</label>
-            <input type="number" id="epContextWindow" value="32768" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+            <input type="number" id="epContextWindow" value="32768"
+              class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
           </div>
           <div class="space-y-2 pt-1 sm:pt-4">
             <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
-              <input type="checkbox" id="epSupportsThinking" checked class="w-4 h-4 text-emerald-500 rounded bg-surface-900 border-surface-600">
+              <input type="checkbox" id="epSupportsThinking" checked
+                class="w-4 h-4 text-emerald-500 rounded bg-surface-900 border-surface-600">
               <span class="text-emerald-400 font-medium">Supports Thinking / Reasoning</span>
             </label>
             <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
-              <input type="checkbox" id="epIsVlm" class="w-4 h-4 text-emerald-500 rounded bg-surface-900 border-surface-600">
+              <input type="checkbox" id="epIsVlm"
+                class="w-4 h-4 text-emerald-500 rounded bg-surface-900 border-surface-600">
               <span>Vision Model (VLM)</span>
             </label>
           </div>
@@ -345,7 +362,8 @@
       </div>
 
       <div class="flex justify-end gap-2 pt-2">
-        <button id="saveEndpointBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded font-medium transition">
+        <button id="saveEndpointBtn"
+          class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded font-medium transition">
           Save to data/endpoints.json
         </button>
       </div>
