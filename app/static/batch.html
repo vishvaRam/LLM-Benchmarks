@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Batch Benchmark - Inference Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: { 900: '#0b0f17', 800: '#111827', 700: '#1f2937', 600: '#374151' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-surface-900 text-slate-100 min-h-screen font-sans flex flex-col">
+
+  <!-- Header with Page Switcher -->
+  <header class="border-b border-surface-700 bg-surface-800/80 backdrop-blur px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <div class="w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div>
+      <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+        <span>Inference Lab</span>
+        <span class="text-xs font-mono font-normal bg-indigo-950 text-indigo-400 border border-indigo-800 px-2 py-0.5 rounded">Batch & HF Evaluation</span>
+      </h1>
+    </div>
+    <div class="flex items-center space-x-2">
+      <a href="/" class="text-xs bg-surface-700 hover:bg-surface-600 text-slate-300 px-3 py-1.5 rounded border border-surface-600 transition">
+        &larr; Playground
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Body -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+    
+    <!-- Setup Controls Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-800 p-5 rounded-lg border border-surface-700">
+      
+      <!-- Target Model / Endpoint -->
+      <div class="space-y-3">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">1. Target Configuration</h2>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Registered Endpoint</label>
+          <select id="endpointSelect" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none"></select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Model Name</label>
+          <input type="text" id="modelInput" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+          <div id="modelChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Concurrency (Workers)</label>
+            <input type="number" id="concurrencyInput" value="3" min="1" max="16" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-sm text-slate-200">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Max Tokens / Sample</label>
+            <input type="number" id="maxTokens" value="512" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-sm text-slate-200">
+          </div>
+        </div>
+      </div>
+
+      <!-- Dataset Config -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">2. Hugging Face Dataset Setup</h2>
+          <span class="text-[10px] text-slate-500 font-mono">Serverless API</span>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" class="hf-preset text-[11px] bg-surface-700 hover:bg-surface-600 border border-surface-600 px-2 py-0.5 rounded text-indigo-300" data-ds="openai/gsm8k" data-cfg="main" data-split="test" data-col="question">GSM8k</button>
+          <button type="button" class="hf-preset text-[11px] bg-surface-700 hover:bg-surface-600 border border-surface-600 px-2 py-0.5 rounded text-indigo-300" data-ds="openai/summarize_from_feedback" data-cfg="comparisons" data-split="train" data-col="info">Summarize</button>
+          <button type="button" class="hf-preset text-[11px] bg-surface-700 hover:bg-surface-600 border border-surface-600 px-2 py-0.5 rounded text-indigo-300" data-ds="HuggingFaceH4/no_robots" data-cfg="default" data-split="test" data-col="prompt">No-Robots</button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">HF Dataset Repository</label>
+            <input type="text" id="hfDataset" value="openai/gsm8k" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 font-mono">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Config / Subset</label>
+            <input type="text" id="hfConfig" value="main" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 font-mono">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Split</label>
+            <input type="text" id="hfSplit" value="test" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 font-mono">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Prompt Column</label>
+            <input type="text" id="hfColumn" value="question" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 font-mono">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1"># of Samples</label>
+            <input type="number" id="numSamples" value="10" min="1" max="100" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="thinkingToggle" class="w-4 h-4 text-indigo-500 rounded bg-surface-900 border-surface-600">
+            <span>Enable Reasoning</span>
+          </label>
+          <button id="startBatchBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-1.5 rounded shadow text-sm transition">
+            Start Batch Run
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Status & Progress Bar -->
+    <div id="progressSection" class="hidden bg-surface-800 border border-surface-700 p-4 rounded-lg space-y-2">
+      <div class="flex items-center justify-between text-xs">
+        <span id="batchStatusText" class="font-mono text-indigo-400">Ready</span>
+        <span id="batchProgressCount" class="font-mono text-slate-400">0 / 0</span>
+      </div>
+      <div class="w-full bg-surface-900 h-2 rounded-full overflow-hidden">
+        <div id="progressBar" class="bg-indigo-500 h-2 w-0 transition-all duration-200"></div>
+      </div>
+    </div>
+
+    <!-- Aggregate Summary Cards -->
+    <div id="summaryCards" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+        <span class="text-[11px] text-slate-400 uppercase">Avg TTFT</span>
+        <div id="aggTtft" class="text-xl font-mono font-bold text-emerald-400 mt-1">--</div>
+      </div>
+      <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+        <span class="text-[11px] text-slate-400 uppercase">Avg Token Rate</span>
+        <div id="aggTps" class="text-xl font-mono font-bold text-sky-400 mt-1">--</div>
+      </div>
+      <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+        <span class="text-[11px] text-slate-400 uppercase">Cluster Throughput</span>
+        <div id="aggClusterTps" class="text-xl font-mono font-bold text-indigo-400 mt-1">--</div>
+        <span class="text-[9px] text-slate-500">total tok / total sec</span>
+      </div>
+      <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+        <span class="text-[11px] text-slate-400 uppercase">Success / Fail</span>
+        <div id="aggCounts" class="text-xl font-mono font-bold text-slate-200 mt-1">-- / --</div>
+      </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="bg-surface-800 border border-surface-700 rounded-lg overflow-hidden">
+      <div class="px-4 py-3 border-b border-surface-700 flex justify-between items-center">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Sample Results</h3>
+        <span class="text-[11px] text-slate-500 font-mono">Live Stream</span>
+      </div>
+      <div class="overflow-x-auto max-h-[500px]">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-surface-900/60 text-slate-400 border-b border-surface-700">
+            <tr>
+              <th class="p-3 w-12">#</th>
+              <th class="p-3 w-72">Prompt</th>
+              <th class="p-3">Generated Output</th>
+              <th class="p-3 w-24">TTFT</th>
+              <th class="p-3 w-28">Decode TPS</th>
+              <th class="p-3 w-24">Tokens</th>
+              <th class="p-3 w-20">Status</th>
+            </tr>
+          </thead>
+          <tbody id="resultsTableBody" class="divide-y divide-surface-700 text-slate-300">
+            <tr>
+              <td colspan="7" class="p-6 text-center text-slate-500">No batch benchmark executed yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/static/batch.js"></script>
+</body>
+</html>

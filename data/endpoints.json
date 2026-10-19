@@ -1,0 +1,20 @@
+{
+  "endpoints": [
+    {
+      "id": "vllm",
+      "name": "vllm",
+      "base_url": "https://ig6js10uhpeiz5-8000.proxy.runpod.net/v1",
+      "api_key": "none",
+      "headers": null,
+      "models": [
+        {
+          "id": "Vishva007/Qwen3.5-9B-NVFP4",
+          "display_name": "Vishva007/Qwen3.5-9B-NVFP4",
+          "is_vlm": false,
+          "context_window": 32768,
+          "supports_thinking": true
+        }
+      ]
+    }
+  ]
+}

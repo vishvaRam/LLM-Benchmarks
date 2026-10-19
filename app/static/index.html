@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM & VLM Benchmark Playground</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            surface: {
+              900: '#0b0f17',
+              800: '#111827',
+              700: '#1f2937',
+              600: '#374151',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #111827;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #374151;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body class="bg-surface-900 text-slate-100 min-h-screen font-sans flex flex-col">
+
+  <!-- Header -->
+  <header
+    class="border-b border-surface-700 bg-surface-800/80 backdrop-blur px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+      <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+        <span>Inference Lab</span>
+        <span
+          class="text-xs font-mono font-normal bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded">FastAPI
+          &middot; vLLM &middot; SGLang &middot; Ollama</span>
+      </h1>
+    </div>
+    <div class="flex items-center space-x-3">
+      <button id="openConfigModalBtn"
+        class="text-xs bg-surface-700 hover:bg-surface-600 text-slate-300 px-3 py-1.5 rounded border border-surface-600 transition flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+        <span>Manage Endpoints (JSON)</span>
+      </button>
+    </div>
+    <a href="/batch"
+      class="text-xs bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700 px-3 py-1.5 rounded transition flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+      <span>Batch Benchmarks &rarr;</span>
+    </a>
+  </header>
+
+  <!-- Workspace -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
+
+    <!-- Left Configuration Panel -->
+    <aside class="lg:col-span-4 border-r border-surface-700 p-5 space-y-5 overflow-y-auto max-h-[calc(100vh-61px)]">
+
+      <!-- Target Endpoint & Model -->
+      <div class="space-y-3 bg-surface-800 p-4 rounded-lg border border-surface-700">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Target Setup</h2>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Target Endpoint (from data/endpoints.json)</label>
+          <div class="flex gap-2">
+            <select id="endpointSelect"
+              class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="" disabled selected>Select an endpoint...</option>
+            </select>
+            <button id="deleteEndpointBtn" title="Delete selected endpoint"
+              class="bg-surface-700 hover:bg-red-950/80 hover:text-red-400 border border-surface-600 text-slate-400 px-2.5 py-1.5 rounded transition flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Model Name</label>
+          <input type="text" id="modelInput" placeholder="e.g. qwen3.8-27b-fp8"
+            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+          <div id="modelChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+        </div>
+      </div>
+
+      <!-- Benchmark Templates -->
+      <div class="space-y-3 bg-surface-800 p-4 rounded-lg border border-surface-700">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Benchmark Presets</h2>
+          <span id="templateBadge" class="text-[10px] text-emerald-400 font-mono hidden">Preset Loaded</span>
+        </div>
+        <div id="templateChips" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Generation Settings -->
+      <div class="space-y-4 bg-surface-800 p-4 rounded-lg border border-surface-700">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Generation Controls</h2>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Temperature</label>
+            <input type="number" step="0.1" id="temperature" value="0.7"
+              class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-sm text-slate-200 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Top P</label>
+            <input type="number" step="0.05" id="topP" value="0.95"
+              class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-sm text-slate-200 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Max Tokens</label>
+            <input type="number" id="maxTokens" value="2048"
+              class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-sm text-slate-200 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Thinking Budget</label>
+            <input type="number" id="thinkingBudget" placeholder="e.g. 4096"
+              class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-sm text-slate-200 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-surface-700 space-y-2">
+          <label class="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
+            <input type="checkbox" id="streamToggle" checked
+              class="w-4 h-4 text-emerald-500 rounded bg-surface-900 border-surface-600">
+            <span>Streaming Mode</span>
+          </label>
+          <label class="flex items-center space-x-2 text-sm text-slate-300 cursor-pointer">
+            <input type="checkbox" id="thinkingToggle"
+              class="w-4 h-4 text-emerald-500 rounded bg-surface-900 border-surface-600">
+            <span>Enable Reasoning / Thinking</span>
+          </label>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Right Workspace Panel -->
+    <section class="lg:col-span-8 p-6 flex flex-col space-y-6 overflow-y-auto max-h-[calc(100vh-61px)]">
+
+      <!-- Metrics Dashboard -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+          <span class="text-[11px] font-medium text-slate-400 uppercase">TTFT</span>
+          <div id="statTtft" class="text-xl font-mono font-bold text-emerald-400 mt-1">--</div>
+          <span class="text-[10px] text-slate-500">Time to first token</span>
+        </div>
+        <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+          <span class="text-[11px] font-medium text-slate-400 uppercase">Decode Rate</span>
+          <div id="statThroughput" class="text-xl font-mono font-bold text-sky-400 mt-1">--</div>
+          <span class="text-[10px] text-slate-500">tokens / sec</span>
+        </div>
+        <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+          <span class="text-[11px] font-medium text-slate-400 uppercase">Latency (E2E)</span>
+          <div id="statLatency" class="text-xl font-mono font-bold text-amber-400 mt-1">--</div>
+          <span class="text-[10px] text-slate-500">Total duration</span>
+        </div>
+        <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+          <span class="text-[11px] font-medium text-slate-400 uppercase">ITL (Avg)</span>
+          <div id="statItlAvg" class="text-xl font-mono font-bold text-indigo-400 mt-1">--</div>
+          <span class="text-[10px] text-slate-500">Inter-token latency</span>
+        </div>
+        <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+          <span class="text-[11px] font-medium text-slate-400 uppercase">ITL P50 / P95</span>
+          <div id="statItlPercentiles" class="text-sm font-mono font-bold text-indigo-300 mt-2">-- / --</div>
+          <span class="text-[10px] text-slate-500">Median / Spike</span>
+        </div>
+        <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+          <span class="text-[11px] font-medium text-slate-400 uppercase">Tokens (Tot/Thk)</span>
+          <div id="statTokens" class="text-sm font-mono font-bold text-purple-300 mt-2">-- / --</div>
+          <span class="text-[10px] text-slate-500">Total vs Reasoning</span>
+        </div>
+      </div>
+
+      <!-- Inputs -->
+      <div class="space-y-3 bg-surface-800 p-4 rounded-lg border border-surface-700">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">System Prompt (optional)</label>
+          <input type="text" id="systemPrompt" placeholder="You are a helpful assistant."
+            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Prompt / Input Query</label>
+          <textarea id="promptInput" rows="4" placeholder="Enter prompt or select a preset template above..."
+            class="w-full bg-surface-900 border border-surface-600 rounded p-3 text-sm text-slate-200 focus:outline-none font-mono"></textarea>
+        </div>
+
+        <!-- Multimodal Image Input (Upload or URL) -->
+        <div class="space-y-2">
+          <label class="block text-xs text-slate-400">VLM Image Input (Upload Image or Paste URL)</label>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <!-- File Upload Button -->
+            <label
+              class="bg-surface-700 hover:bg-surface-600 border border-surface-600 text-slate-200 text-xs px-3 py-2 rounded cursor-pointer transition flex items-center justify-center gap-1.5 shrink-0">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span id="uploadLabel">Upload Image</span>
+              <input type="file" id="imageFileInput" accept="image/png,image/jpeg,image/webp,image/jpg" class="hidden">
+            </label>
+
+            <!-- URL / Base64 Data Input -->
+            <input type="text" id="imageUrl"
+              placeholder="Upload a local image above or paste image URL / Base64 data..."
+              class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono truncate">
+
+            <!-- Reset Button -->
+            <button type="button" id="clearImageBtn"
+              class="bg-surface-700 hover:bg-red-950/60 hover:text-red-400 border border-surface-600 text-slate-400 text-xs px-3 py-1.5 rounded transition hidden">
+              Clear
+            </button>
+          </div>
+
+          <!-- Image Preview Thumbnail -->
+          <div id="imagePreviewContainer"
+            class="hidden items-center gap-3 p-2 bg-surface-900 border border-surface-700 rounded">
+            <img id="imagePreview" src="" alt="Thumbnail"
+              class="h-16 w-16 object-cover rounded border border-surface-600 bg-surface-950">
+            <div class="text-[11px] font-mono text-slate-400 truncate flex-1">
+              <span id="imageMeta" class="text-emerald-400">Image Loaded (Base64)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <button id="runBtn"
+            class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-6 py-2 rounded shadow transition flex items-center gap-2">
+            <svg id="btnSpinner" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white hidden" fill="none"
+              viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span id="btnText">Execute Benchmark</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="space-y-3">
+        <details id="thinkingContainer" class="hidden bg-surface-800 border border-surface-700 rounded-lg p-3 group">
+          <summary
+            class="text-xs font-semibold uppercase tracking-wider text-purple-400 cursor-pointer list-none flex items-center justify-between">
+            <span>&bull; Reasoning Trace (<span id="thinkingTokenCount">0</span> tokens)</span>
+            <span class="text-slate-500 text-[10px] group-open:rotate-180 transition">&or;</span>
+          </summary>
+          <div id="thinkingOutput"
+            class="mt-3 text-xs font-mono text-purple-200/80 whitespace-pre-wrap bg-surface-900 p-3 rounded border border-surface-700/60 max-h-60 overflow-y-auto">
+          </div>
+        </details>
+
+        <div class="bg-surface-800 border border-surface-700 rounded-lg p-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Model Output</h3>
+            <span id="finishBadge" class="text-[10px] font-mono text-slate-500"></span>
+          </div>
+          <pre id="responseOutput"
+            class="text-sm font-mono text-slate-200 whitespace-pre-wrap bg-surface-900 p-4 rounded border border-surface-700/60 min-h-[160px] max-h-[400px] overflow-y-auto">Benchmark results will appear here...</pre>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Modal: Manage / Save Endpoints Directly to JSON -->
+  <div id="configModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-surface-800 border border-surface-700 rounded-lg max-w-md w-full p-6 space-y-4 shadow-xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Save Endpoint to JSON</h3>
+        <button id="closeConfigModalBtn" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <!-- >>> ADD THIS BLOCK HERE <<< -->
+      <div class="space-y-1.5 border-b border-surface-700 pb-3">
+        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Existing Endpoints</label>
+        <div id="modalEndpointsList" class="space-y-1.5 max-h-36 overflow-y-auto pr-1"></div>
+      </div>
+      <!-- >>> END OF ADDED BLOCK <<< -->
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">ID (unique identifier)</label>
+          <input type="text" id="epId" placeholder="e.g. vllm-prod" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Display Name</label>
+          <input type="text" id="epName" placeholder="e.g. Production vLLM Instance" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Base URL</label>
+          <input type="text" id="epBaseUrl" placeholder="http://localhost:8000/v1" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">API Key</label>
+          <input type="password" id="epApiKey" placeholder="none" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Models (comma-separated)</label>
+          <input type="text" id="epModels" placeholder="qwen3.8-27b-fp8, llama-3.2-11b" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-surface-700/60">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Context Window</label>
+            <input type="number" id="epContextWindow" value="32768" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
+          </div>
+          <div class="space-y-2 pt-1 sm:pt-4">
+            <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" id="epSupportsThinking" checked class="w-4 h-4 text-emerald-500 rounded bg-surface-900 border-surface-600">
+              <span class="text-emerald-400 font-medium">Supports Thinking / Reasoning</span>
+            </label>
+            <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+              <input type="checkbox" id="epIsVlm" class="w-4 h-4 text-emerald-500 rounded bg-surface-900 border-surface-600">
+              <span>Vision Model (VLM)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="saveEndpointBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded font-medium transition">
+          Save to data/endpoints.json
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+
+</html>

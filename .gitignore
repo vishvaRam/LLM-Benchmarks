@@ -1,0 +1,5 @@
+.venv
+.ruff_cache
+build/
+releases/
+LLM_Benchmarking_Studio.spec
