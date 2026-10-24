@@ -7,7 +7,7 @@ cd "$PROJECT_ROOT"
 
 APP_NAME="llm-benchmarking-studio"
 APP_DISPLAY_NAME="LLM Benchmarking Studio"
-VERSION="1.0.0"
+VERSION="1.2.0"
 ARCH="amd64"
 DEB_NAME="${APP_NAME}_${VERSION}_${ARCH}.deb"
 
@@ -33,6 +33,7 @@ pyinstaller --noconfirm --onedir --windowed \
     --add-data "${PROJECT_ROOT}/assets:assets" \
     --collect-all "uvicorn" \
     --collect-all "fastapi" \
+    --collect-all "pymupdf" \
     --collect-all "starlette" \
     --collect-all "webview" \
     run_app.py

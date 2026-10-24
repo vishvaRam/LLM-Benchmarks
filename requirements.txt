@@ -10,5 +10,5 @@ pyinstaller
 pillow
 PyQt6
 pywebview
-PyGObject
+pythonnet
 ruff

@@ -36,22 +36,30 @@ Inference Lab is designed to run seamlessly across platforms:
 - **Streaming Reasoning Extraction**: Supports both native `delta.reasoning_content` and real-time streaming tag parsing for `<think>...</think>` tags directly in content streams.
 - **Interactive Reasoning Drawer**: Unfolds live reasoning trace and tracks reasoning token counts independently from response tokens.
 
-### 🖼️ Multimodal Vision (VLM) Benchmarking
+### 📄 Multimodal Vision (VLM) & Multi-Page PDF Processing
 
-- **Drag-and-Drop / File Upload**: Converts local images to Base64 Data URIs on the fly—enabling remote inference servers (e.g. RunPod, Cloud vLLM) to process local images without network hurdles.
-- **URL & Base64 Linking**: Benchmark images via public URLs or raw Data URIs.
-- **VLM Presets Included**: Built-in visual spatial reasoning, multilingual document OCR, ID card data extraction, and object counting presets.
+- **Document & Image Ingestion**: Direct upload support for PNG, JPEG, WEBP, and multi-page PDF documents.
+- **High-Fidelity Rendering via PyMuPDF**: Automated conversion of PDF pages into base64 visual tokens (150 DPI) with flexible page range controls (`First Page`, `All Pages`, or `First N Pages`).
+- **Visual Page Gallery**: Interactive thumbnail strip allowing quick multi-page verification before dispatching inference requests.
+- **URL & Data URI Linking**: Benchmark images via remote public URLs or inline Base64 data strings.
+
+### 🎯 Structured Decisions Studio (`/v1/systemone`)
+
+- **Typed Probabilistic Evaluation**: Test discrete decision queries evaluated directly via first-token read log probabilities (`label_mass`) without auto-regressive decoding overhead.
+- **Supported Decision Types**: Full UI workflows for `choice` (categorical options), `noul` (yes/no affirmation probabilities), and `score` (ordered scale distributions and expected values).
+- **Prefix-Cache Aware**: Designed to benchmark prefix-caching behavior where the state is cached and subsequent question probes evaluate with zero prompt re-computation.
 
 ### 📊 Concurrency & Batch Evaluation (Hugging Face Datasets)
 
 - **Zero-Dependency Dataset Loading**: Stream and evaluate rows directly from Hugging Face Datasets API (e.g., `openai/gsm8k`, `openai/openai_humaneval`, `allenai/ai2_arc`).
 - **Configurable Concurrency**: Run asynchronous parallel workers (1 to 32 parallel requests) and track aggregate TTFT, cluster throughput, and per-sample latency.
 
-### 🛠️ JSON-Backed Endpoint Management
+### 🛠️ Persistent JSON-Backed Registries
 
-- Persisted registry in `data/endpoints.json`.
-- Manage, add, and delete endpoints directly in the UI.
-- Configurable model capabilities (`supports_thinking`, `is_vlm`, `context_window`, `api_key`).
+- **Inference Endpoints**: Saved in `data/endpoints.json` with per-model capabilities (`supports_thinking`, `is_vlm`, `context_window`, `api_key`).
+- **Custom Benchmark Presets**: Save and delete custom prompt templates in `data/templates.json` with optional sample image/document attachments.
+- **Custom Decision Presets**: Maintain custom state/question definitions in `data/decision_templates.json` directly from the UI.
+- **Protected Built-Ins**: Default system templates remain protected while custom user templates can be deleted or updated dynamically.
 
 ---
 
@@ -60,33 +68,42 @@ Inference Lab is designed to run seamlessly across platforms:
 ```text
 LLM-Benchmarks/
 ├── app/
-│   ├── main.py                     # FastAPI application setup & static mounts
+│   ├── main.py                     # FastAPI setup, route mounts & page handlers
 │   ├── routers/
-│   │   ├── benchmark.py            # Single-run streaming benchmark endpoint
+│   │   ├── benchmark.py            # Streaming benchmark & PDF conversion endpoints
 │   │   ├── batch.py                # Concurrent dataset batch runner
+│   │   ├── decisions.py            # /v1/systemone runner & decision presets API
 │   │   ├── endpoints.py            # Endpoint CRUD registry API
-│   │   └── templates.py            # Presets & multimodal template store
+│   │   └── templates.py            # Benchmark prompt template store & router
 │   ├── schemas/
-│   │   ├── benchmark.py            # Pydantic schemas for metrics & run requests
+│   │   ├── benchmark.py            # Benchmark request, metrics & payload schemas
 │   │   ├── batch.py                # Batch request & aggregate metrics schemas
+│   │   ├── decision.py             # Structured decision schemas (choice, noul, score)
 │   │   ├── endpoints.py            # Endpoint & model metadata schemas
-│   │   └── template.py             # Prompt template schema
+│   │   └── template.py             # Prompt template schemas
 │   ├── services/
-│   │   ├── benchmark_service.py    # OpenAI streaming client, tag parser & metrics
+│   │   ├── benchmark_service.py    # Streaming client, PyMuPDF engine & metrics
 │   │   ├── batch_service.py        # Asynchronous batch executor with semaphore
+│   │   ├── decision_template_store.py # JSON file store for decision presets
 │   │   ├── endpoint_store.py       # JSON file store for endpoints
+│   │   ├── template_store.py       # JSON file store for user prompt templates
 │   │   └── metrics.py              # ITL, percentiles & throughput computation
 │   └── static/
-│       ├── index.html              # Main benchmark playground UI
-│       ├── app.js                  # SSE stream reader & metrics dashboard
+│       ├── index.html              # Main playground & PDF benchmark studio
+│       ├── app.js                  # SSE stream parser & multi-page gallery
 │       ├── batch.html              # Batch benchmark UI
-│       └── batch.js                # Batch progress streaming & table rendering
+│       ├── batch.js                # Batch evaluation streamer
+│       ├── decisions.html          # Structured Decisions studio UI
+│       └── decisions.js            # /v1/systemone runner & distribution visualizer
 ├── data/
-│   └── endpoints.json              # Configured inference endpoints
-├── Images/                         # Sample multimodal test images (OCR, ID, etc.)
+│   ├── endpoints.json              # Configured inference endpoints
+│   ├── templates.json              # User custom benchmark templates
+│   └── decision_templates.json     # User custom decision templates
+├── Images/                         # Default test assets (OCR, sample docs, cats)
+├── scripts/
+│   └── build_deb.sh                # Linux packaging script
 ├── run_app.py                      # Standalone native desktop launcher
-├── requirements.txt                # Python dependencies
-├── generate_app_icon.py            # App icon generator for release builds
+├── requirements.txt 				# Python dependencies
 └── README.md
 ```
 
@@ -105,7 +122,7 @@ LLM-Benchmarks/
 - **Linux (Ubuntu / Debian)**: Requires system WebKitGTK and PyGObject libraries for native window rendering:
   ```bash
   sudo apt update
-  sudo apt install -y python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1
+  sudo apt install -y python3-gi gir1.2-gtk-3.0 gir1.2-webkit2-4.1 libglib2.0-dev libgirepository-2.0-dev pkg-config
   ```
 
 ### 2. Install Dependencies
@@ -159,7 +176,7 @@ Build a single-file executable using PyInstaller:
 
 ```bash
 pyinstaller --noconfirm --onefile --windowed \
-  --name "LLM_Benchmarking_Studio_v1.0.0" \
+  --name "LLM_Benchmarking_Studio_v1.2.0" \
   --distpath "releases" \
   --icon "assets/app_icon.ico" \
   --add-data "app/static;app/static" \
@@ -169,25 +186,8 @@ pyinstaller --noconfirm --onefile --windowed \
   --collect-all "uvicorn" \
   --collect-all "fastapi" \
   --collect-all "starlette" \
+  --collect-all "pymupdf" \
   --collect-all "webview" \
-  run_app.py
-```
-
-#### Multi-Line (PowerShell):
-
-```powershell
-pyinstaller --noconfirm --onefile --windowed `
-  --name "LLM_Benchmarking_Studio_v1.0.0" `
-  --distpath "releases" `
-  --icon "assets/app_icon.ico" `
-  --add-data "app/static;app/static" `
-  --add-data "Images;Images" `
-  --add-data "data;data" `
-  --add-data "assets;assets" `
-  --collect-all "uvicorn" `
-  --collect-all "fastapi" `
-  --collect-all "starlette" `
-  --collect-all "webview" `
   run_app.py
 ```
 
@@ -209,21 +209,21 @@ chmod +x scripts/build_deb.sh
 This freezes the application, bundles all static assets, and builds a Debian `.deb` package with desktop integration and icon registration.
 
 The output package will be created at:
-`releases/llm-benchmarking-studio_1.0.0_amd64.deb`
+`releases/llm-benchmarking-studio_1.2.0_amd64.deb`
 
 #### 2. Install the `.deb` package on Ubuntu / Debian:
 
 Install using `apt` so all required system runtime dependencies (WebKitGTK) are automatically resolved:
 
 ```bash
-sudo apt install ./releases/llm-benchmarking-studio_1.0.0_amd64.deb
+sudo apt install ./releases/llm-benchmarking-studio_1.2.0_amd64.deb
 ```
 
 *(Alternative using dpkg)*:
 
 ```bash
-sudo dpkg -i releases/llm-benchmarking-studio_1.0.0_amd64.deb
-sudo apt-get install -f
+sudo dpkg -i releases/llm-benchmarking-studio_1.2.0_amd64.deb
+sudo apt-get install -f.
 ```
 
 #### 3. Launching the App:
@@ -244,16 +244,21 @@ sudo apt remove llm-benchmarking-studio
 
 ## 📡 API Reference
 
-| Endpoint            | Method                        | Description                                                      |
-| :------------------ | :---------------------------- | :--------------------------------------------------------------- |
-| `/`               | `GET`                       | Main benchmarking playground UI                                  |
-| `/batch`          | `GET`                       | Batch evaluation dashboard UI                                    |
-| `/benchmark/run`  | `POST`                      | Executes streaming single benchmark via Server-Sent Events (SSE) |
-| `/batch/run`      | `POST`                      | Executes concurrent dataset benchmark with live SSE progress     |
-| `/endpoints/`     | `GET`, `POST`, `DELETE` | List, save, or delete configured endpoints                       |
-| `/endpoints/{id}` | `GET`, `DELETE`           | Retrieve or delete specific endpoint by ID                       |
-| `/templates/`     | `GET`, `POST`, `DELETE` | List or register benchmark prompt templates                      |
-| `/health`         | `GET`                       | Health check endpoint                                            |
+| Endpoint                     | Method                        | Description                                                      |
+| :--------------------------- | :---------------------------- | :--------------------------------------------------------------- |
+| `/`                        | `GET`                       | Main benchmarking playground UI                                  |
+| `/batch`                   | `GET`                       | Batch evaluation dashboard UI                                    |
+| `/decisions`               | `GET`                       | Structured Decisions (`/v1/systemone`) studio UI               |
+| `/benchmark/run`           | `POST`                      | Executes streaming single benchmark via Server-Sent Events (SSE) |
+| `/benchmark/process-pdf`   | `POST`                      | Converts uploaded PDF pages to base64 images via PyMuPDF         |
+| `/batch/run`               | `POST`                      | Executes concurrent dataset benchmark with live SSE progress     |
+| `/decision/run`            | `POST`                      | Dispatches structured question reads to `/v1/systemone`        |
+| `/decision/templates`      | `GET`, `POST`             | List or register structured decision presets                     |
+| `/decision/templates/{id}` | `DELETE`                    | Delete user custom decision preset                               |
+| `/endpoints/`              | `GET`, `POST`, `DELETE` | List, save, or delete configured endpoints                       |
+| `/endpoints/{id}`          | `GET`, `DELETE`           | Retrieve or delete specific endpoint by ID                       |
+| `/templates/`              | `GET`, `POST`             | List or register benchmark prompt templates                      |
+| `/templates/{id}`          | `DELETE`                    | Delete user custom benchmark template                            |
 
 ---
 
