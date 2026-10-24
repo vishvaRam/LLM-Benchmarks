@@ -52,6 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const tplClearMediaBtn = document.getElementById("tplClearMediaBtn");
   const tplMediaPreview = document.getElementById("tplMediaPreview");
   const tplMediaMeta = document.getElementById("tplMediaMeta");
+  const pdfDpiSelect = document.getElementById("pdfDpiSelect");
 
   let activeEndpoints = [];
   let currentImages = [];
@@ -103,15 +104,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (pdfDpiSelect) {
+    pdfDpiSelect.addEventListener("change", async () => {
+      if (activePdfFile) await convertPdf(activePdfFile);
+    });
+  }
+
   async function convertPdf(file) {
     const mode =
       document.querySelector('input[name="pdfMode"]:checked')?.value || "first";
     const limit = parseInt(pdfPageLimit?.value) || 1;
+    const dpi = parseInt(pdfDpiSelect?.value) || 250;
 
     const formData = new FormData();
     formData.append("file", file);
     formData.append("page_mode", mode);
     formData.append("page_limit", limit);
+    formData.append("dpi", dpi);
 
     imageMeta.textContent = "Processing PDF pages with PyMuPDF...";
     imagePreviewContainer.classList.remove("hidden");
@@ -122,13 +131,20 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         body: formData,
       });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+
       const data = await res.json();
       currentImages = data.images || [];
 
       if (currentImages.length > 0) {
         imageMeta.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-        pageCountBadge.textContent = `${currentImages.length} page${currentImages.length > 1 ? "s" : ""} rendered`;
-        pageCountBadge.classList.remove("hidden");
+        if (pageCountBadge) {
+          pageCountBadge.textContent = `${currentImages.length} page${currentImages.length > 1 ? "s" : ""} rendered`;
+          pageCountBadge.classList.remove("hidden");
+        }
         renderThumbnails(currentImages);
       }
     } catch (err) {

@@ -17,10 +17,16 @@ async def run_benchmark(request: BenchmarkRequest):
 
 @router.post("/process-pdf")
 async def process_pdf(
-    file: UploadFile = File(...),  # noqa: B008
-    page_mode: str = Form("first"),  # "first", "all", "limit"
+    file: UploadFile = File(...),
+    page_mode: str = Form("first"),
     page_limit: int = Form(1),
+    dpi: int = Form(250),
 ):
     content = await file.read()
-    images = pdf_to_base64_images(content, mode=page_mode, max_pages=page_limit)
+    images = pdf_to_base64_images(
+        content,
+        mode=page_mode,
+        max_pages=page_limit,
+        dpi=dpi,
+    )
     return {"images": images, "total_processed": len(images)}

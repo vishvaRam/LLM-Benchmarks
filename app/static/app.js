@@ -77,6 +77,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const tplMediaPreview = document.getElementById("tplMediaPreview");
   const tplMediaMeta = document.getElementById("tplMediaMeta");
 
+  const pdfDpiSelect = document.getElementById("pdfDpiSelect");
+
   // --- Image & PDF Thumbnail Renderer ---
   function renderThumbnails(images) {
     const container = document.getElementById("previewThumbs");
@@ -127,15 +129,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  if (pdfDpiSelect) {
+    pdfDpiSelect.addEventListener("change", async () => {
+      if (activePdfFile) await convertPdf(activePdfFile);
+    });
+  }
+
   async function convertPdf(file) {
     const mode =
       document.querySelector('input[name="pdfMode"]:checked')?.value || "first";
     const limit = parseInt(pdfPageLimit?.value) || 1;
+    const dpi = parseInt(pdfDpiSelect?.value) || 250;
 
     const formData = new FormData();
     formData.append("file", file);
     formData.append("page_mode", mode);
     formData.append("page_limit", limit);
+    formData.append("dpi", dpi);
 
     imageMeta.textContent = "Processing PDF pages with PyMuPDF...";
     imagePreviewContainer.classList.remove("hidden");

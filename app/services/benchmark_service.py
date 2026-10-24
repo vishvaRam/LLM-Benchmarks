@@ -18,30 +18,36 @@ def normalize_base_url(base_url: str) -> str:
         url = f"{url}/v1"
     return url
 
-def pdf_to_base64_images(pdf_bytes: bytes, mode: str = "first", max_pages: int | None = None) -> list[str]:
-    """
-    mode: 'first', 'all', or 'custom'
-    """
+def pdf_to_base64_images(
+    pdf_bytes: bytes,
+    mode: str = "first",
+    max_pages: int | None = None,
+    dpi: int = 250,
+) -> list[str]:
     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
     total = len(doc)
-    
+
     if mode == "first":
         page_indices = [0] if total > 0 else []
     elif mode == "all":
         page_indices = list(range(total))
-    else: # custom limit
+    else:
         limit = min(max_pages or 1, total)
         page_indices = list(range(limit))
 
     images = []
+    # Clamp DPI between 72 and 300 to prevent OOM on gigantic documents
+    render_dpi = max(72, min(dpi, 300))
+    
+    print(f"Processing PDF at : {render_dpi} DPI")
+
     for idx in page_indices:
         page = doc[idx]
-        # 150 DPI matrix for crisp VLM reading
-        pix = page.get_pixmap(dpi=150)
+        pix = page.get_pixmap(dpi=render_dpi)
         img_bytes = pix.tobytes("png")
         b64 = base64.b64encode(img_bytes).decode("utf-8")
         images.append(f"data:image/png;base64,{b64}")
-    
+
     doc.close()
     return images
 
