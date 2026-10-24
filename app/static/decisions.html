@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Structured Decisions Studio (/v1/systemone)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="icon" type="image/png" href="/assets/app_icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Open Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            900: '#0b0f17',
+                            800: '#111827',
+                            700: '#1f2937',
+                            600: '#374151'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="bg-surface-900 text-slate-100 min-h-screen font-sans flex flex-col">
+
+    <!-- Header -->
+    <header
+        class="border-b border-surface-700 bg-surface-800/80 backdrop-blur px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+            <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                <span>Inference Lab</span>
+                <span
+                    class="text-xs font-mono font-normal bg-purple-950/80 text-purple-300 border border-purple-800 px-2 py-0.5 rounded">Structured
+                    Decisions &middot; /v1/systemone</span>
+            </h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/"
+                class="text-xs bg-surface-700 hover:bg-surface-600 text-slate-300 px-3 py-1.5 rounded border border-surface-600 transition flex items-center gap-1.5">
+                &larr; Standard Playground
+            </a>
+            <a href="/batch"
+                class="text-xs bg-surface-700 hover:bg-surface-600 text-slate-300 px-3 py-1.5 rounded border border-surface-600 transition flex items-center gap-1.5">
+                Batch Benchmark
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
+
+        <!-- Left Configuration Panel -->
+        <aside class="lg:col-span-5 border-r border-surface-700 p-5 space-y-5 overflow-y-auto max-h-[calc(100vh-61px)]">
+
+            <!-- Endpoint & Model Setup -->
+            <div class="space-y-3 bg-surface-800 p-4 rounded-lg border border-surface-700">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Target Setup</h2>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Target Endpoint</label>
+                    <select id="endpointSelect"
+                        class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
+                        <option value="" disabled selected>Loading endpoints...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Model ID</label>
+                    <input type="text" id="modelInput" placeholder="e.g. Vishva007/Qwen3.5-9B-NVFP4"
+                        class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-purple-500 font-mono text-xs">
+                    <div id="modelChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+                </div>
+            </div>
+
+            <!-- Presets Area -->
+            <div class="space-y-3 bg-surface-800 p-4 rounded-lg border border-surface-700">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Decision Presets</h2>
+                        <button id="openTemplateModalBtn"
+                            class="text-[10px] bg-surface-700 hover:bg-surface-600 text-slate-300 px-2 py-0.5 rounded border border-surface-600 transition">
+                            + Manage / Add
+                        </button>
+                    </div>
+                    <span id="templateBadge" class="text-[10px] text-purple-400 font-mono hidden">Preset Loaded</span>
+                </div>
+                <div id="templateChips" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <!-- Multi-modal Image / PDF Upload -->
+            <div class="space-y-3 bg-surface-800 p-4 rounded-lg border border-surface-700">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Visual Evidence (Image
+                        / PDF)</label>
+                    <button type="button" id="clearImageBtn"
+                        class="text-[11px] text-slate-400 hover:text-red-400 hidden transition flex items-center gap-1">
+                        &times; Clear
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                    <label
+                        class="sm:col-span-4 bg-surface-700 hover:bg-surface-600 border border-surface-600 hover:border-purple-500/50 text-slate-200 text-xs px-3 py-2 rounded-md cursor-pointer transition flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-purple-400 shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span id="uploadLabel" class="font-medium truncate">Upload File</span>
+                        <input type="file" id="mediaFileInput"
+                            accept="image/png,image/jpeg,image/webp,image/jpg,application/pdf" class="hidden">
+                    </label>
+                    <div class="sm:col-span-8">
+                        <input type="text" id="imageUrl" placeholder="Or paste Image URL / Base64..."
+                            class="w-full bg-surface-900 border border-surface-600 rounded-md px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500 font-mono truncate">
+                    </div>
+                </div>
+
+                <!-- PDF Options (Shown when PDF is uploaded) -->
+                <div id="pdfOptionsContainer"
+                    class="hidden flex-wrap items-center justify-between gap-3 bg-surface-900 px-3 py-2 rounded-md border border-surface-700 text-xs">
+                    <div class="flex items-center gap-2 text-slate-300">
+                        <span
+                            class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-red-950 text-red-400 border border-red-800">PDF</span>
+                        <span>Pages:</span>
+                    </div>
+                    <div class="flex items-center gap-1 bg-surface-800 p-0.5 rounded border border-surface-700">
+                        <label
+                            class="px-2 py-0.5 rounded cursor-pointer transition has-[:checked]:bg-purple-600 has-[:checked]:text-white text-slate-400 hover:text-slate-200">
+                            <input type="radio" name="pdfMode" value="first" checked class="hidden"> First
+                        </label>
+                        <label
+                            class="px-2 py-0.5 rounded cursor-pointer transition has-[:checked]:bg-purple-600 has-[:checked]:text-white text-slate-400 hover:text-slate-200">
+                            <input type="radio" name="pdfMode" value="all" class="hidden"> All
+                        </label>
+                        <label
+                            class="px-2 py-0.5 rounded cursor-pointer transition has-[:checked]:bg-purple-600 has-[:checked]:text-white text-slate-400 hover:text-slate-200">
+                            <input type="radio" name="pdfMode" value="limit" class="hidden"> First N
+                        </label>
+                    </div>
+                    <div id="pdfLimitWrapper" class="hidden items-center gap-1 text-slate-300">
+                        <input type="number" id="pdfPageLimit" min="1" max="20" value="3"
+                            class="w-12 bg-surface-800 border border-surface-600 rounded px-1.5 py-0.5 text-xs text-center text-slate-200">
+                    </div>
+                </div>
+
+                <!-- Thumbnails Strip -->
+                <div id="imagePreviewContainer"
+                    class="hidden flex-col gap-2 p-2.5 bg-surface-900 border border-surface-700 rounded-md">
+                    <div class="flex items-center justify-between text-xs">
+                        <span id="imageMeta" class="text-slate-300 font-mono text-[11px] truncate"></span>
+                        <span id="pageCountBadge"
+                            class="text-[10px] font-mono text-purple-400 bg-purple-950/70 border border-purple-800/60 px-1.5 py-0.5 rounded hidden"></span>
+                    </div>
+                    <div id="previewThumbs" class="flex gap-2 overflow-x-auto py-1"></div>
+                </div>
+            </div>
+
+            <!-- State Statement & Question Schema Configurator -->
+            <div class="space-y-4 bg-surface-800 p-4 rounded-lg border border-surface-700">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Decision Schema</h2>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">State Statement (Prefix context)</label>
+                    <textarea id="stateInput" rows="2"
+                        placeholder="e.g. Examine the image and check if it contains a cat."
+                        class="w-full bg-surface-900 border border-surface-600 rounded p-2.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500 font-mono"></textarea>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs text-slate-400">Questions Payload (JSON)</label>
+                        <span class="text-[10px] text-slate-500 font-mono">choice | noul | score</span>
+                    </div>
+                    <textarea id="questionsJsonInput" rows="10"
+                        class="w-full bg-surface-900 border border-surface-600 rounded p-2.5 text-xs text-purple-200 focus:outline-none focus:border-purple-500 font-mono"></textarea>
+                </div>
+
+                <button id="runDecisionBtn"
+                    class="w-full bg-purple-600 hover:bg-purple-500 text-white font-medium px-4 py-2 rounded-md shadow transition flex items-center justify-center gap-2">
+                    <svg id="btnSpinner" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white hidden" fill="none"
+                        viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                    <span id="btnText">Execute Structured Decision</span>
+                </button>
+            </div>
+
+        </aside>
+
+        <!-- Right Workspace Panel -->
+        <section class="lg:col-span-7 p-6 flex flex-col space-y-6 overflow-y-auto max-h-[calc(100vh-61px)]">
+
+            <!-- Metrics / Run Telemetry -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+                    <span class="text-[11px] font-medium text-slate-400 uppercase">Status</span>
+                    <div id="statStatus" class="text-lg font-mono font-bold text-slate-300 mt-1">--</div>
+                    <span class="text-[10px] text-slate-500">HTTP Code</span>
+                </div>
+                <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+                    <span class="text-[11px] font-medium text-slate-400 uppercase">Latency</span>
+                    <div id="statLatency" class="text-lg font-mono font-bold text-amber-400 mt-1">--</div>
+                    <span class="text-[10px] text-slate-500">Elapsed Seconds</span>
+                </div>
+                <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+                    <span class="text-[11px] font-medium text-slate-400 uppercase">Questions</span>
+                    <div id="statQuestions" class="text-lg font-mono font-bold text-sky-400 mt-1">--</div>
+                    <span class="text-[10px] text-slate-500">Evaluated</span>
+                </div>
+                <div class="bg-surface-800 border border-surface-700 p-3 rounded-lg text-center">
+                    <span class="text-[11px] font-medium text-slate-400 uppercase">Top Decision</span>
+                    <div id="statTopChoice" class="text-lg font-mono font-bold text-purple-400 mt-1 truncate px-1">--
+                    </div>
+                    <span class="text-[10px] text-slate-500">Highest Prob</span>
+                </div>
+            </div>
+
+            <!-- Probability Cards & Visual Results -->
+            <div class="space-y-4">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Decision Outcomes</h3>
+                <div id="decisionCardsContainer" class="space-y-3">
+                    <div
+                        class="bg-surface-800 border border-surface-700 rounded-lg p-6 text-center text-slate-500 text-xs">
+                        Run a decision or select a template to visualize label masses and probabilities.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Raw JSON Response Inspector -->
+            <div class="space-y-2">
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Raw Endpoint Response</h3>
+                <pre id="rawResponse"
+                    class="text-xs font-mono text-slate-200 bg-surface-800 p-4 rounded-lg border border-surface-700 overflow-x-auto max-h-72">Awaiting decision execution...</pre>
+            </div>
+
+            <!-- Endpoint Technical Specification Documentation -->
+            <details class="bg-surface-800 border border-surface-700 rounded-lg p-4 group">
+                <summary
+                    class="text-xs font-semibold uppercase tracking-wider text-purple-400 cursor-pointer list-none flex items-center justify-between">
+                    <span>&bull; Endpoint Specification: How /v1/systemone Works</span>
+                    <span class="text-slate-500 text-[10px] group-open:rotate-180 transition">&or;</span>
+                </summary>
+                <div class="mt-3 text-xs text-slate-300 space-y-3 border-t border-surface-700/60 pt-3 leading-relaxed">
+                    <p>The <code class="text-purple-400 font-mono">/v1/systemone</code> endpoint answers a set of typed
+                        questions about a state and returns a probability for every allowed answer.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                        <div class="bg-surface-900 p-2.5 rounded border border-surface-700">
+                            <span class="font-bold text-slate-200">1. Execution Read</span>
+                            <p class="text-slate-400 mt-0.5">Each question is one read. The user message is the state,
+                                followed by the question, its options with type labels, and an instruction to answer
+                                with one label.</p>
+                        </div>
+                        <div class="bg-surface-900 p-2.5 rounded border border-surface-700">
+                            <span class="font-bold text-slate-200">2. Single-Token Read</span>
+                            <p class="text-slate-400 mt-0.5">The read evaluates the reply's first token. Each label must
+                                be exactly one token, or the endpoint returns HTTP 400.</p>
+                        </div>
+                        <div class="bg-surface-900 p-2.5 rounded border border-surface-700">
+                            <span class="font-bold text-slate-200">3. Label Mass & Softmax</span>
+                            <p class="text-slate-400 mt-0.5">Returns logprobs of question label tokens. Softmax over
+                                labels gives probability. Requires <code
+                                    class="font-mono text-purple-300">--logprobs-mode raw_logprobs</code> or <code
+                                    class="font-mono text-purple-300">processed_logprobs</code>.</p>
+                        </div>
+                        <div class="bg-surface-900 p-2.5 rounded border border-surface-700">
+                            <span class="font-bold text-slate-200">4. Prefix Caching Optimization</span>
+                            <p class="text-slate-400 mt-0.5">With <code
+                                    class="font-mono text-purple-300">--enable-prefix-caching</code>, the state is
+                                prefilled once and each subsequent question prefills only its own text, then reads one
+                                token.</p>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+        </section>
+    </main>
+
+    <!-- Modal: Manage / Save Decision Presets -->
+    <div id="templateModal"
+        class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div
+            class="bg-surface-800 border border-surface-700 rounded-lg max-w-lg w-full p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Manage Decision Presets (JSON)</h3>
+                <button id="closeTemplateModalBtn" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+
+            <div class="space-y-1.5 border-b border-surface-700 pb-3">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Existing
+                    Presets</label>
+                <div id="modalTemplatesList" class="space-y-1.5 max-h-36 overflow-y-auto pr-1"></div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Preset ID (slug)</label>
+                        <input type="text" id="tplId" placeholder="e.g. document_risk_eval"
+                            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Display Name</label>
+                        <input type="text" id="tplName" placeholder="e.g. Document Risk Assessment"
+                            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Category</label>
+                    <input type="text" id="tplCategory" placeholder="e.g. Compliance / OCR / Detection"
+                        class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">State Statement</label>
+                    <input type="text" id="tplState" placeholder="Analyze the document contents..."
+                        class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Questions JSON</label>
+                    <textarea id="tplQuestions" rows="6" placeholder="{ ... }"
+                        class="w-full bg-surface-900 border border-surface-600 rounded p-2 text-xs text-slate-200 font-mono"></textarea>
+                </div>
+
+                <!-- Sample Attachment within Template Modal -->
+                <div class="space-y-2 pt-1 border-t border-surface-700">
+                    <label class="block text-xs text-slate-400">Sample Attachment (Optional Image/PDF)</label>
+                    <div class="flex gap-2">
+                        <label
+                            class="bg-surface-700 hover:bg-surface-600 border border-surface-600 text-slate-200 text-xs px-3 py-1.5 rounded cursor-pointer transition flex items-center gap-1 shrink-0">
+                            <span id="tplUploadLabel">Upload File</span>
+                            <input type="file" id="tplFileInput" accept="image/*,application/pdf" class="hidden">
+                        </label>
+                        <input type="text" id="tplImageUrl" placeholder="Or paste base64 / URL..."
+                            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200 font-mono truncate">
+                        <button type="button" id="tplClearMediaBtn"
+                            class="text-xs text-slate-400 hover:text-red-400 px-2 hidden">&times; Clear</button>
+                    </div>
+                    <div id="tplMediaPreview"
+                        class="hidden text-xs text-purple-400 font-mono bg-surface-900 p-2 rounded border border-surface-700">
+                        <span id="tplMediaMeta"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button id="saveTemplateBtn"
+                    class="bg-purple-600 hover:bg-purple-500 text-white text-xs px-4 py-2 rounded font-medium transition">
+                    Save to data/decision_templates.json
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/decisions.js"></script>
+</body>
+
+</html>

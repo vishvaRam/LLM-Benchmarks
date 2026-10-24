@@ -8,3 +8,4 @@ LLM_Benchmarking_Studio_v1.0.0.spec
 **/__pycache__/
 *.py[cod]
 *$py.class
+data/

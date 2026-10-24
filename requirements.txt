@@ -2,6 +2,7 @@ fastapi
 uvicorn
 openai
 pydantic
+pymupdf
 numpy
 python-multipart
 httpx
@@ -10,3 +11,4 @@ pillow
 PyQt6
 pywebview
 PyGObject
+ruff

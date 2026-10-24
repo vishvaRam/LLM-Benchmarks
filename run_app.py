@@ -1,5 +1,4 @@
 import multiprocessing
-import os
 import socket
 import sys
 import tempfile
@@ -38,10 +37,10 @@ if sys.stderr is None:
 # Explicitly import Uvicorn protocol implementations so PyInstaller packages them reliably
 try:
     import h11  # noqa: F401
-    import uvicorn.lifespans.on  # noqa: F401
-    import uvicorn.loops.asyncio  # noqa: F401
-    import uvicorn.protocols.http.h11_impl  # noqa: F401
-    import uvicorn.protocols.websockets.auto  # noqa: F401
+    import uvicorn.lifespans.on
+    import uvicorn.loops.asyncio
+    import uvicorn.protocols.http.h11_impl
+    import uvicorn.protocols.websockets.auto
 except ImportError:
     pass
 

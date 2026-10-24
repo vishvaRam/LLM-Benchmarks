@@ -60,7 +60,7 @@ class BatchService:
         try:
             prompts = await cls.fetch_hf_samples(req.dataset)
         except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': f'Failed loading dataset: {str(e)}'})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'message': f'Failed loading dataset: {e!s}'})}\n\n"
             return
 
         yield f"data: {json.dumps({'type': 'status', 'message': f'Dataset loaded. Launching benchmark with concurrency={req.concurrency_limit}...', 'total': len(prompts)})}\n\n"

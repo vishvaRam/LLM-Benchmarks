@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.template import PromptTemplate
+from app.services.template_store import TemplateStore
 
 router = APIRouter(prefix="/templates", tags=["Templates"])
 
@@ -24,7 +25,7 @@ cats_uri = load_image_data_uri("cats.jpg")
 ocr_uri = load_image_data_uri("ocr.jpeg")
 aadhar_uri = load_image_data_uri("aadhar.jpg")
 
-TEMPLATE_STORE: dict[str, PromptTemplate] = {
+BUILTIN_TEMPLATES: dict[str, PromptTemplate] = {
     # --- Multimodal Presets using Images/ ---
     "vlm_cat_detection": PromptTemplate(
         id="vlm_cat_detection",
@@ -85,14 +86,14 @@ TEMPLATE_STORE: dict[str, PromptTemplate] = {
         system_prompt="You are an expert document information extraction AI. Output strictly valid JSON without conversational text.",
         template=(
             "Analyze this identity document image and extract all visible data into a clean, valid JSON object:\n"
-            "{\n"
+            "{{\n"
             '  "full_name": "...",\n'
             '  "date_of_birth": "...",\n'
             '  "gender": "...",\n'
             '  "id_number": "...",\n'
             '  "address": "...",\n'
             '  "issuing_authority": "..."\n'
-            "}\n"
+            "}}\n"
             "If any field is missing or unreadable, set its value to null."
         ),
         sample_image_url=aadhar_uri,
@@ -156,32 +157,96 @@ TEMPLATE_STORE: dict[str, PromptTemplate] = {
             "5. Caching, replication, and rate-limiting considerations."
         ),
     ),
+    "long_form_guide": PromptTemplate(
+        id="long_form_guide",
+        category="Long Form",
+        name="Comprehensive Architecture Guide (Long-Form)",
+        description="Stress tests maximum output token generation and sustained throughput with an exhaustive, long-form technical guide.",
+        system_prompt="You are a Principal Technical Writer and Software Architect. Provide exhaustive, production-grade, end-to-end documentation without skipping details or using placeholders.",
+        template=(
+            "Write an exhaustive, multi-chapter architectural deep-dive on designing and deploying a globally distributed, "
+            "multi-region database engine from scratch.\n\n"
+            "Cover the following sections in maximum technical detail:\n"
+            "1. Core Storage Engine: LSM-trees vs B-Trees, write-ahead logging (WAL), SSTable compaction strategies, and memory pooling.\n"
+            "2. Distributed Consensus: Raft vs Multi-Paxos implementation details, leader election, log replication edge cases, split-brain scenarios, and heartbeat timing.\n"
+            "3. Concurrency Control & Transactions: Multi-Version Concurrency Control (MVCC), snapshot isolation, distributed deadlocks, and two-phase commits (2PC).\n"
+            "4. Global Replication & Consistency: Tunable consistency, handling high network latency, cross-datacenter partition recovery, and CRDTs.\n"
+            "5. Observability, Failure Injection & Chaos Engineering: Tracing, disk corruption detection, node failure recovery, and automated stress testing.\n\n"
+            "Provide concrete schema examples, pseudo-code algorithms, and deep failure-mode analysis. Avoid summaries or brevity."
+        ),
+    ),
 }
+
+
+# Proxy dict for BenchmarkService backward compatibility
+class DynamicTemplateStore(dict):
+    def get(self, key, default=None):
+        user_tpls = TemplateStore.load_user_templates()
+        if key in user_tpls:
+            return user_tpls[key]
+        return BUILTIN_TEMPLATES.get(key, default)
+
+    def __getitem__(self, key):
+        val = self.get(key)
+        if val is None:
+            raise KeyError(key)
+        return val
+
+TEMPLATE_STORE = DynamicTemplateStore()
+
+
+# Proxy dict for BenchmarkService backward compatibility
+class DynamicTemplateStore(dict):
+    def get(self, key, default=None):
+        user_tpls = TemplateStore.load_user_templates()
+        if key in user_tpls:
+            return user_tpls[key]
+        return BUILTIN_TEMPLATES.get(key, default)
+
+    def __getitem__(self, key):
+        val = self.get(key)
+        if val is None:
+            raise KeyError(key)
+        return val
+
+TEMPLATE_STORE = DynamicTemplateStore()
+
+
+def get_all_templates() -> dict[str, PromptTemplate]:
+    all_tpls = BUILTIN_TEMPLATES.copy()
+    all_tpls.update(TemplateStore.load_user_templates())
+    return all_tpls
 
 
 @router.get("/", response_model=list[PromptTemplate])
 async def list_templates():
-    return list(TEMPLATE_STORE.values())
+    return list(get_all_templates().values())
 
 
 @router.get("/{template_id}", response_model=PromptTemplate)
 async def get_template(template_id: str):
-    if template_id not in TEMPLATE_STORE:
+    tpls = get_all_templates()
+    if template_id not in tpls:
         raise HTTPException(status_code=404, detail="Template not found")
-    return TEMPLATE_STORE[template_id]
+    return tpls[template_id]
 
 
 @router.post("/", response_model=PromptTemplate)
 async def add_template(template: PromptTemplate):
-    if template.id in TEMPLATE_STORE:
-        raise HTTPException(status_code=400, detail="Template ID already exists")
-    TEMPLATE_STORE[template.id] = template
+    TemplateStore.save_one(template)
     return template
 
 
 @router.delete("/{template_id}")
 async def delete_template(template_id: str):
-    if template_id not in TEMPLATE_STORE:
+    user_templates = TemplateStore.load_user_templates()
+    if template_id not in user_templates:
+        raise HTTPException(
+            status_code=403, 
+            detail="Cannot delete built-in presets or non-existent template."
+        )
+    
+    success = TemplateStore.delete_one(template_id)
+    if not success:
         raise HTTPException(status_code=404, detail="Template not found")
-    del TEMPLATE_STORE[template_id]
-    return {"message": f"Template '{template_id}' deleted successfully"}
+    return {"message": f"User preset '{template_id}' deleted successfully."}

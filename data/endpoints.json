@@ -3,7 +3,7 @@
     {
       "id": "vllm",
       "name": "vllm",
-      "base_url": "https://ig6js10uhpeiz5-8000.proxy.runpod.net/v1",
+      "base_url": "http://213.173.105.26:18278/v1",
       "api_key": "none",
       "headers": null,
       "models": [

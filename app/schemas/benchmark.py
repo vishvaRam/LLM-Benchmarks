@@ -39,7 +39,8 @@ class BenchmarkRequest(BaseModel):
     template_id: str | None = None
     template_variables: dict[str, str] | None = None
     prompt_payload: PromptPayload | None = None
-    image_url: str | None = None  # <-- ADD THIS FIELD
+    image_url: str | None = None 
+    image_urls: list[str] | None = None
 
 
 class BenchmarkMetrics(BaseModel):

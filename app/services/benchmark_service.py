@@ -1,7 +1,9 @@
+import base64
 import json
 import time
 from collections.abc import AsyncGenerator
 
+import pymupdf
 from openai import AsyncOpenAI
 
 from app.routers.templates import TEMPLATE_STORE
@@ -16,6 +18,32 @@ def normalize_base_url(base_url: str) -> str:
         url = f"{url}/v1"
     return url
 
+def pdf_to_base64_images(pdf_bytes: bytes, mode: str = "first", max_pages: int | None = None) -> list[str]:
+    """
+    mode: 'first', 'all', or 'custom'
+    """
+    doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+    total = len(doc)
+    
+    if mode == "first":
+        page_indices = [0] if total > 0 else []
+    elif mode == "all":
+        page_indices = list(range(total))
+    else: # custom limit
+        limit = min(max_pages or 1, total)
+        page_indices = list(range(limit))
+
+    images = []
+    for idx in page_indices:
+        page = doc[idx]
+        # 150 DPI matrix for crisp VLM reading
+        pix = page.get_pixmap(dpi=150)
+        img_bytes = pix.tobytes("png")
+        b64 = base64.b64encode(img_bytes).decode("utf-8")
+        images.append(f"data:image/png;base64,{b64}")
+    
+    doc.close()
+    return images
 
 class ThinkTagStreamParser:
     """
@@ -50,8 +78,7 @@ class ThinkTagStreamParser:
                     self.in_think = True
                     self.buffer = self.buffer[open_pos + len("<think>") :]
                     # Strip leading newline if right after <think>
-                    if self.buffer.startswith("\n"):
-                        self.buffer = self.buffer[1:]
+                    self.buffer = self.buffer.removeprefix("\n")
                 else:
                     # Check for partial prefix of "<think>" at end of buffer
                     partial_match = False
@@ -79,8 +106,7 @@ class ThinkTagStreamParser:
                     self.in_think = False
                     self.buffer = self.buffer[close_pos + len("</think>") :]
                     # Strip leading newline if right after </think>
-                    if self.buffer.startswith("\n"):
-                        self.buffer = self.buffer[1:]
+                    self.buffer = self.buffer.removeprefix("\n")
                 else:
                     # Check for partial prefix of "</think>" at end of buffer
                     partial_match = False
@@ -140,12 +166,15 @@ class BenchmarkService:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
 
-        # Multi-modal (VLM) format vs Standard LLM format
-        if image_url:
-            user_content = [
-                {"type": "text", "text": user_text},
-                {"type": "image_url", "image_url": {"url": image_url}},
-            ]
+        # Combine image_urls list and single image_url fallback
+        all_images = list(req.image_urls or [])
+        if image_url and image_url not in all_images:
+            all_images.insert(0, image_url)
+
+        if all_images:
+            user_content: list[dict] = [{"type": "text", "text": user_text}]
+            for img in all_images:
+                user_content.append({"type": "image_url", "image_url": {"url": img}})
             messages.append({"role": "user", "content": user_content})
         else:
             messages.append({"role": "user", "content": user_text})
