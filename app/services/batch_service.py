@@ -1,5 +1,6 @@
 import asyncio
 import json
+import random
 import time
 from collections.abc import AsyncGenerator
 
@@ -13,27 +14,68 @@ from app.services.endpoint_store import EndpointStore
 
 class BatchService:
     @staticmethod
-    async def fetch_hf_samples(cfg: DatasetSourceConfig) -> list[str]:
-        """Fetch sample prompts using Hugging Face datasets rows API without large library installs."""
-        url = "https://datasets-server.huggingface.co/rows"
-        params = {
-            "dataset": cfg.dataset_name,
-            "config": cfg.config,
-            "split": cfg.split,
-            "offset": 0,
-            "length": cfg.num_samples,
-        }
+    async def _get_dataset_split_length(
+        client: httpx.AsyncClient, cfg: DatasetSourceConfig
+    ) -> int | None:
+        """Query HF Serverless API to determine the total row count of the split."""
+        try:
+            size_url = "https://datasets-server.huggingface.co/size"
+            res = await client.get(size_url, params={"dataset": cfg.dataset_name})
+            if res.status_code == 200:
+                data = res.json()
+                splits = (
+                    data.get("size", {})
+                    .get("splits", [])
+                )
+                for s in splits:
+                    if s.get("config") == cfg.config and s.get("split") == cfg.split:
+                        return s.get("num_rows")
+        except Exception:
+            pass
+        return None
+
+    @classmethod
+    async def fetch_hf_samples(cls, cfg: DatasetSourceConfig) -> list[str]:
+        """Fetch sample prompts using Hugging Face datasets rows API with shuffle & seed support."""
+        rows_url = "https://datasets-server.huggingface.co/rows"
+
+        # Initialize RNG with seed if given; else system randomness
+        rng = random.Random(cfg.seed)
 
         async with httpx.AsyncClient(timeout=15.0) as client:
-            res = await client.get(url, params=params)
+            offset = 0
+            fetch_length = cfg.num_samples
+
+            if getattr(cfg, "shuffle", False):
+                total_rows = await cls._get_dataset_split_length(client, cfg)
+
+                if total_rows and total_rows > cfg.num_samples:
+                    # Choose a random offset window within total bounds
+                    max_offset = max(0, total_rows - cfg.num_samples)
+                    offset = rng.randint(0, max_offset)
+                else:
+                    # If total length unavailable or small, request a larger pool (up to 100 max per HF API call)
+                    fetch_length = min(100, max(cfg.num_samples * 2, 20))
+
+            params = {
+                "dataset": cfg.dataset_name,
+                "config": cfg.config,
+                "split": cfg.split,
+                "offset": offset,
+                "length": fetch_length,
+            }
+
+            res = await client.get(rows_url, params=params)
             if res.status_code != 200:
                 raise ValueError(
                     f"Hugging Face API returned error ({res.status_code}): {res.text}. "
                     "Verify the dataset name, config, and split."
                 )
+
             data = res.json()
             rows = data.get("rows", [])
-            prompts = []
+            prompts: list[str] = []
+
             for item in rows:
                 row_data = item.get("row", {})
                 val = row_data.get(cfg.prompt_column)
@@ -44,7 +86,12 @@ class BatchService:
                 raise ValueError(
                     f"Column '{cfg.prompt_column}' was empty or not found in dataset rows."
                 )
-            return prompts
+
+            # In-memory shuffle on the fetched pool
+            if getattr(cfg, "shuffle", False):
+                rng.shuffle(prompts)
+
+            return prompts[: cfg.num_samples]
 
     @classmethod
     async def run_batch_stream(
@@ -55,7 +102,9 @@ class BatchService:
             yield f"data: {json.dumps({'type': 'error', 'message': f'Endpoint {req.endpoint_id} not found'})}\n\n"
             return
 
-        yield f"data: {json.dumps({'type': 'status', 'message': f'Fetching {req.dataset.num_samples} samples from Hugging Face ({req.dataset.dataset_name})...'})}\n\n"
+        seed_info = f" (seed={req.dataset.seed})" if req.dataset.seed is not None else ""
+        shuffle_info = "randomized" if getattr(req.dataset, "shuffle", False) else "sequential"
+        yield f"data: {json.dumps({'type': 'status', 'message': f'Fetching {req.dataset.num_samples} {shuffle_info} samples{seed_info} from HF ({req.dataset.dataset_name})...'})}\n\n"
 
         try:
             prompts = await cls.fetch_hf_samples(req.dataset)

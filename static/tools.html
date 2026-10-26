@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tool Calling Benchmark — Inference Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/assets/app_icon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Open Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            surface: { 950: '#070a0f', 900: '#0b0f17', 800: '#111827', 700: '#1f2937', 600: '#374151' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+  </style>
+</head>
+
+<body class="bg-surface-900 text-slate-100 min-h-screen font-sans flex flex-col">
+
+  <!-- Header -->
+  <header class="border-b border-surface-700 bg-surface-800/80 backdrop-blur px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+    <div class="flex items-center space-x-3">
+      <div class="w-3 h-3 bg-amber-500 rounded-full animate-pulse"></div>
+      <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+        <span>Inference Lab</span>
+        <span class="text-xs font-mono font-normal bg-amber-950/80 text-amber-300 border border-amber-800 px-2 py-0.5 rounded">Function Calling Evaluation</span>
+      </h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/" class="text-xs bg-surface-700 hover:bg-surface-600 text-slate-300 px-3 py-1.5 rounded border border-surface-600 transition">&larr; Playground</a>
+      <a href="/decisions" class="text-xs bg-surface-700 hover:bg-surface-600 text-slate-300 px-3 py-1.5 rounded border border-surface-600 transition">Decisions</a>
+      <a href="/batch" class="text-xs bg-surface-700 hover:bg-surface-600 text-slate-300 px-3 py-1.5 rounded border border-surface-600 transition">Batch</a>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+
+    <!-- Top Config Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface-800 p-5 rounded-lg border border-surface-700">
+      
+      <!-- Target Configuration -->
+      <div class="space-y-3">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Target Endpoint &amp; Model</h2>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Target Endpoint</label>
+          <select id="endpointSelect" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500"></select>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Model ID</label>
+          <input type="text" id="modelInput" class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200 font-mono focus:outline-none focus:border-amber-500">
+          <div id="modelChips" class="flex flex-wrap gap-1.5 mt-2"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 pt-1">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Concurrency</label>
+            <input type="number" id="concurrencyInput" value="4" min="1" max="16" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Max Tokens</label>
+            <input type="number" id="maxTokens" value="512" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+      </div>
+
+      <!-- Dataset & Presets (Clean Single Container) -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Dataset &amp; Scenarios</h2>
+          <span class="text-[10px] text-slate-500 font-mono">Hugging Face Serverless</span>
+        </div>
+
+        <!-- Public Unauthenticated Tool Calling Presets -->
+        <div class="flex flex-wrap gap-1.5">
+          <button type="button" class="preset-btn text-[11px] bg-amber-600 text-white font-medium border border-amber-500 px-2.5 py-1 rounded transition cursor-pointer" 
+            data-ds="Team-ACE/ToolACE" data-split="train" data-cfg="default">Team-ACE ToolACE (11k)</button>
+          
+          <button type="button" class="preset-btn text-[11px] bg-surface-700 hover:bg-surface-600 border border-surface-600 px-2.5 py-1 rounded text-amber-300 transition cursor-pointer" 
+            data-ds="glaiveai/glaive-function-calling-v2" data-split="train" data-cfg="default">Glaive v2</button>
+
+          <button type="button" class="preset-btn text-[11px] bg-surface-700 hover:bg-surface-600 border border-surface-600 px-2.5 py-1 rounded text-amber-300 transition cursor-pointer" 
+            data-ds="Mustafaege/qwen3.5-functioncalling-v1" data-split="train" data-cfg="default">Qwen3.5 FC (112k)</button>
+        </div>
+        
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2">
+            <label class="block text-xs text-slate-400 mb-1">Hugging Face Repository</label>
+            <input type="text" id="datasetName" value="Team-ACE/ToolACE" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Config / Subset</label>
+            <input type="text" id="datasetConfig" value="default" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Split</label>
+            <input type="text" id="datasetSplit" value="train" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Samples</label>
+            <input type="number" id="numSamples" value="24" min="4" max="100" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Seed (optional)</label>
+            <input type="number" id="evalSeed" placeholder="random" class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500">
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center pt-2">
+          <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer select-none">
+            <input type="checkbox" id="shuffleToggle" checked class="w-4 h-4 text-amber-500 rounded bg-surface-900 border-surface-600 cursor-pointer">
+            <span>Shuffle &amp; Randomize Slice</span>
+          </label>
+          <button id="startBenchmarkBtn" class="bg-amber-600 hover:bg-amber-500 text-white font-medium px-6 py-2 rounded shadow text-sm transition flex items-center gap-2 cursor-pointer">
+            <span>Start Tool Benchmark</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Telemetry Cards -->
+    <div id="statsRow" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="bg-surface-800 border border-surface-700 p-4 rounded-lg text-center">
+        <span class="text-[11px] font-medium text-slate-400 uppercase">Accuracy Rate</span>
+        <div id="statAccuracy" class="text-2xl font-mono font-bold text-emerald-400 mt-1">--%</div>
+        <span id="statFraction" class="text-[10px] text-slate-500 font-mono">0 / 0 correct</span>
+      </div>
+      <div class="bg-surface-800 border border-surface-700 p-4 rounded-lg text-center">
+        <span class="text-[11px] font-medium text-slate-400 uppercase">Avg TTFT</span>
+        <div id="statTtft" class="text-2xl font-mono font-bold text-sky-400 mt-1">-- ms</div>
+        <span class="text-[10px] text-slate-500">Latency to invocation</span>
+      </div>
+      <div class="bg-surface-800 border border-surface-700 p-4 rounded-lg text-center">
+        <span class="text-[11px] font-medium text-slate-400 uppercase">Throughput</span>
+        <div id="statThroughput" class="text-2xl font-mono font-bold text-purple-400 mt-1">--</div>
+        <span class="text-[10px] text-slate-500">tok / sec</span>
+      </div>
+      <div class="bg-surface-800 border border-surface-700 p-4 rounded-lg text-center">
+        <span class="text-[11px] font-medium text-slate-400 uppercase">Status</span>
+        <div id="statStatus" class="text-2xl font-mono font-bold text-slate-300 mt-1">Ready</div>
+        <span id="statElapsed" class="text-[10px] text-slate-500 font-mono">0.0s elapsed</span>
+      </div>
+    </div>
+
+    <!-- Live Test Grid of Small Boxes -->
+    <div class="bg-surface-800 border border-surface-700 rounded-lg p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-surface-700/60 pb-3">
+        <div>
+          <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-300">Tool Invocation Test Matrix</h3>
+          <p class="text-[11px] text-slate-500 mt-0.5">Click any block to inspect function call arguments, schema, and raw execution logs.</p>
+        </div>
+        <div class="flex items-center gap-3 text-xs font-mono">
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500"></span> Correct</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-500"></span> Incorrect</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-500"></span> Error</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-surface-700 border border-surface-600 animate-pulse"></span> Pending</span>
+        </div>
+      </div>
+
+      <div id="gridContainer" class="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-16 gap-2 pt-2 min-h-[140px]">
+        <div class="col-span-full text-center text-xs text-slate-500 py-10 font-mono">Run the benchmark to populate invocation blocks...</div>
+      </div>
+    </div>
+
+    <!-- Inspector Modal -->
+    <div id="inspectModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+      <div class="bg-surface-800 border border-surface-700 rounded-xl max-w-4xl w-full p-6 space-y-4 shadow-2xl max-h-[92vh] flex flex-col">
+        
+        <div class="flex items-center justify-between border-b border-surface-700 pb-3">
+          <div class="flex items-center gap-3">
+            <span id="inspectBadge" class="text-xs font-mono px-2.5 py-0.5 rounded font-bold uppercase"></span>
+            <h3 id="inspectTitle" class="text-base font-bold text-white font-mono">Scenario #1</h3>
+            <div id="inspectMetrics" class="hidden sm:flex items-center gap-2 text-[11px] font-mono text-slate-400 border-l border-surface-700 pl-3">
+              <span id="inspectTtft" class="text-sky-400 font-medium">TTFT: -- ms</span>
+              <span>&bull;</span>
+              <span id="inspectLatency" class="text-amber-400 font-medium">Total: -- s</span>
+              <span>&bull;</span>
+              <span id="inspectTokens" class="text-purple-400 font-medium">Tokens: --</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button id="inspectPrevBtn" type="button" title="Previous scenario (Left Arrow)" class="px-2.5 py-1 rounded bg-surface-700 hover:bg-surface-600 border border-surface-600 text-slate-200 text-xs font-mono transition cursor-pointer">&larr; Prev</button>
+            <button id="inspectNextBtn" type="button" title="Next scenario (Right Arrow)" class="px-2.5 py-1 rounded bg-surface-700 hover:bg-surface-600 border border-surface-600 text-slate-200 text-xs font-mono transition cursor-pointer">Next &rarr;</button>
+            <button id="closeInspectBtn" class="text-slate-400 hover:text-white text-xl ml-2 px-1 leading-none cursor-pointer">&times;</button>
+          </div>
+        </div>
+
+        <div class="space-y-4 text-xs font-mono overflow-y-auto pr-1 flex-1">
+          <div>
+            <span class="text-slate-400 block mb-1 text-[11px] font-semibold uppercase tracking-wider">User Input / Scenario Query</span>
+            <div id="inspectPrompt" class="bg-surface-900 p-3.5 rounded-lg border border-surface-700 text-slate-200 whitespace-pre-wrap leading-relaxed select-text"></div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="bg-surface-900/80 p-3 rounded-lg border border-surface-700 space-y-1">
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Expected Tool Call</span>
+              <div id="inspectExpected" class="font-bold text-emerald-400 text-sm truncate"></div>
+            </div>
+            <div class="bg-surface-900/80 p-3 rounded-lg border border-surface-700 space-y-1">
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Actual Model Tool Call</span>
+              <div id="inspectActual" class="font-bold text-sm truncate"></div>
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400 text-[11px] font-semibold uppercase tracking-wider">Function Arguments</span>
+              <button id="copyArgsBtn" type="button" class="text-[11px] bg-surface-700 hover:bg-surface-600 text-slate-300 border border-surface-600 px-2 py-0.5 rounded transition cursor-pointer">Copy JSON</button>
+            </div>
+            <pre id="inspectArgs" class="bg-surface-950 p-3.5 rounded-lg border border-surface-700 text-purple-200 overflow-x-auto whitespace-pre-wrap select-text max-h-48 leading-tight font-mono text-[11px]"></pre>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400 text-[11px] font-semibold uppercase tracking-wider">Raw Model Payload / Output</span>
+              <button id="copyRawBtn" type="button" class="text-[11px] bg-surface-700 hover:bg-surface-600 text-slate-300 border border-surface-600 px-2 py-0.5 rounded transition cursor-pointer">Copy Output</button>
+            </div>
+            <pre id="inspectRaw" class="bg-surface-950 p-3 rounded-lg border border-surface-700 text-slate-300 overflow-x-auto whitespace-pre-wrap select-text max-h-36 leading-tight font-mono text-[11px]"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/static/tools.js"></script>
+</body>
+</html>

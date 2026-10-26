@@ -59,6 +59,36 @@ document.addEventListener("DOMContentLoaded", () => {
   let activePdfFile = null;
   let tplAttachedImages = [];
 
+  const copyDecisionBtn = document.getElementById("copyDecisionBtn");
+  const copyDecisionText = document.getElementById("copyDecisionText");
+
+  if (copyDecisionBtn && rawResponse) {
+    copyDecisionBtn.addEventListener("click", async () => {
+      const textToCopy = rawResponse.textContent || "";
+      if (!textToCopy || textToCopy === "Awaiting decision execution...")
+        return;
+
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        if (copyDecisionText) copyDecisionText.textContent = "Copied!";
+        setTimeout(() => {
+          if (copyDecisionText) copyDecisionText.textContent = "Copy";
+        }, 1500);
+      } catch (err) {
+        const textarea = document.createElement("textarea");
+        textarea.value = textToCopy;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (copyDecisionText) copyDecisionText.textContent = "Copied!";
+        setTimeout(() => {
+          if (copyDecisionText) copyDecisionText.textContent = "Copy";
+        }, 1500);
+      }
+    });
+  }
+
   // --- Thumbnail Gallery Rendering ---
   function renderThumbnails(images) {
     if (!previewThumbs) return;
@@ -446,19 +476,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Save New Custom Template ---
   if (saveTemplateBtn) {
     saveTemplateBtn.onclick = async () => {
-      const id = document
-        .getElementById("tplId")
-        .value.trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_");
       const name = document.getElementById("tplName").value.trim();
       const category =
         document.getElementById("tplCategory").value.trim() || "Custom";
       const state = document.getElementById("tplState").value.trim();
       const rawQ = document.getElementById("tplQuestions").value.trim();
 
-      if (!id || !name || !state || !rawQ) {
-        return alert("ID, Name, State, and Questions JSON are required.");
+      if (!name || !state || !rawQ) {
+        return alert("Name, State, and Questions JSON are required.");
       }
 
       let parsedQuestions;
@@ -467,6 +492,14 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (err) {
         return alert("Invalid Questions JSON formatting.");
       }
+
+      // Auto-generate slug from Display Name
+      const id =
+        name
+          .toLowerCase()
+          .replace(/[^a-z0-9_-]/g, "_")
+          .replace(/_+/g, "_")
+          .replace(/^_+|_+$/g, "") || `decision_${Date.now()}`;
 
       const payload = {
         id,
@@ -484,7 +517,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       if (res.ok) {
-        document.getElementById("tplId").value = "";
         document.getElementById("tplName").value = "";
         document.getElementById("tplCategory").value = "";
         document.getElementById("tplState").value = "";

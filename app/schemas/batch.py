@@ -11,6 +11,8 @@ class DatasetSourceConfig(BaseModel):
     num_samples: int = Field(default=10, ge=1, le=200)
     prompt_column: str = Field(default="question", example="question")
     system_prompt: str | None = None
+    shuffle: bool = Field(default=True, description="Randomize dataset samples on each batch run")
+    seed: int | None = Field(default=None, description="Optional seed for deterministic sampling")
 
 
 class BatchBenchmarkRequest(BaseModel):

@@ -38,8 +38,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const thinkingContainer = document.getElementById("thinkingContainer");
   const thinkingOutput = document.getElementById("thinkingOutput");
   const thinkingTokenCount = document.getElementById("thinkingTokenCount");
+  const contentTokenCount = document.getElementById("contentTokenCount");
   const responseOutput = document.getElementById("responseOutput");
   const finishBadge = document.getElementById("finishBadge");
+  const rightPanel = document.querySelector("section.lg\\:col-span-8");
 
   // Modal elements
   const configModal = document.getElementById("configModal");
@@ -77,7 +79,42 @@ document.addEventListener("DOMContentLoaded", () => {
   const tplMediaPreview = document.getElementById("tplMediaPreview");
   const tplMediaMeta = document.getElementById("tplMediaMeta");
 
+  const copyOutputBtn = document.getElementById("copyOutputBtn");
+  const copyOutputText = document.getElementById("copyOutputText");
+
+  if (copyOutputBtn && responseOutput) {
+    copyOutputBtn.addEventListener("click", async () => {
+      const textToCopy = responseOutput.textContent || "";
+      if (!textToCopy || textToCopy === "Benchmark results will appear here...")
+        return;
+
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        if (copyOutputText) copyOutputText.textContent = "Copied!";
+        setTimeout(() => {
+          if (copyOutputText) copyOutputText.textContent = "Copy";
+        }, 1500);
+      } catch (err) {
+        // Fallback for non-secure contexts
+        const textarea = document.createElement("textarea");
+        textarea.value = textToCopy;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (copyOutputText) copyOutputText.textContent = "Copied!";
+        setTimeout(() => {
+          if (copyOutputText) copyOutputText.textContent = "Copy";
+        }, 1500);
+      }
+    });
+  }
+
   const pdfDpiSelect = document.getElementById("pdfDpiSelect");
+
+  if (rightPanel) {
+    rightPanel.scrollTop = rightPanel.scrollHeight;
+  }
 
   // --- Image & PDF Thumbnail Renderer ---
   function renderThumbnails(images) {
@@ -356,11 +393,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Save Preset to data/templates.json ---
   if (saveTemplateBtn) {
     saveTemplateBtn.onclick = async () => {
-      const id = document
-        .getElementById("tplId")
-        .value.trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_");
       const name = document.getElementById("tplName").value.trim();
       const category =
         document.getElementById("tplCategory").value.trim() || "Custom";
@@ -368,9 +400,17 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("tplSystemPrompt").value.trim() || null;
       const template = document.getElementById("tplTemplate").value.trim();
 
-      if (!id || !name || !template) {
-        return alert("ID, Name, and Template prompt are required.");
+      if (!name || !template) {
+        return alert("Display Name and Template prompt are required.");
       }
+
+      // Auto-generate slug from Display Name
+      const id =
+        name
+          .toLowerCase()
+          .replace(/[^a-z0-9_-]/g, "_")
+          .replace(/_+/g, "_")
+          .replace(/^_+|_+$/g, "") || `tpl_${Date.now()}`;
 
       const payload = {
         id,
@@ -390,7 +430,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       if (res.ok) {
-        document.getElementById("tplId").value = "";
         document.getElementById("tplName").value = "";
         document.getElementById("tplCategory").value = "";
         document.getElementById("tplSystemPrompt").value = "";
@@ -521,7 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
       activeEndpoints.forEach((ep) => {
         const opt = document.createElement("option");
         opt.value = ep.id;
-        opt.textContent = `${ep.name} (${ep.base_url})`;
+        opt.textContent = ep.name || ep.id; // Only Display Name
         endpointSelect.appendChild(opt);
       });
 
@@ -578,6 +617,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const contextWindow =
       parseInt(document.getElementById("epContextWindow")?.value) || 32768;
 
+    const name = document.getElementById("epName").value.trim();
+    if (!name) {
+      return alert("Display Name is required.");
+    }
+
+    // Auto-generate unique ID slug from Display Name
+    const generatedId =
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "") || `ep-${Date.now()}`;
+
     const modelsList = document
       .getElementById("epModels")
       .value.split(",")
@@ -599,17 +651,17 @@ document.addEventListener("DOMContentLoaded", () => {
       rawBaseUrl += "/v1";
     }
 
+    if (!rawBaseUrl) {
+      return alert("Base URL is required.");
+    }
+
     const payload = {
-      id: document.getElementById("epId").value.trim(),
-      name: document.getElementById("epName").value.trim(),
+      id: generatedId,
+      name: name,
       base_url: rawBaseUrl,
       api_key: document.getElementById("epApiKey").value.trim() || "none",
       models: modelsList,
     };
-
-    if (!payload.id || !payload.base_url) {
-      return alert("ID and Base URL are required.");
-    }
 
     const res = await fetch("/endpoints/", {
       method: "POST",
@@ -618,13 +670,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (res.ok) {
+      document.getElementById("epName").value = "";
+      document.getElementById("epBaseUrl").value = "";
+      document.getElementById("epApiKey").value = "";
+      document.getElementById("epModels").value = "";
       configModal.classList.add("hidden");
       await loadEndpoints();
     } else {
       alert("Failed to save endpoint to JSON file.");
     }
   };
-
   async function deleteEndpoint(endpointId) {
     if (!confirm(`Are you sure you want to delete endpoint "${endpointId}"?`)) {
       return;
@@ -694,7 +749,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="truncate mr-2 flex flex-col gap-0.5">
           <div>
             <span class="text-slate-200 font-medium">${ep.name || ep.id}</span>
-            <span class="text-slate-500 font-mono text-[10px]">(${ep.id})</span>
           </div>
           <div class="flex flex-wrap gap-1 mt-0.5">${modelsBadges}</div>
         </div>
@@ -728,6 +782,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSpinner.classList.remove("hidden");
     btnText.textContent = "Benchmarking...";
     responseOutput.textContent = "";
+    if (contentTokenCount) contentTokenCount.textContent = "0";
     thinkingContainer.classList.add("hidden");
     thinkingOutput.textContent = "";
     thinkingTokenCount.textContent = "0";
@@ -811,8 +866,16 @@ document.addEventListener("DOMContentLoaded", () => {
               thinkingOutput.textContent += data.delta;
               thinkingTokenCount.textContent =
                 (parseInt(thinkingTokenCount.textContent) || 0) + 1;
+              // Auto-scroll reasoning trace to the bottom as it streams
+              thinkingOutput.scrollTop = thinkingOutput.scrollHeight;
             } else if (data.type === "content") {
               responseOutput.textContent += data.delta;
+              if (contentTokenCount) {
+                contentTokenCount.textContent =
+                  (parseInt(contentTokenCount.textContent) || 0) + 1;
+                // Auto-scroll model output to the bottom as it streams
+                responseOutput.scrollTop = responseOutput.scrollHeight;
+              }
             } else if (data.type === "metrics") {
               const m = data.metrics;
               statTtft.textContent = `${m.ttft_ms} ms`;
@@ -823,6 +886,8 @@ document.addEventListener("DOMContentLoaded", () => {
               statTokens.textContent = `${m.output_tokens} / ${m.thinking_tokens}`;
               finishBadge.textContent = `finish_reason: ${m.finish_reason || "completed"}`;
               thinkingTokenCount.textContent = m.thinking_tokens;
+              if (contentTokenCount)
+                contentTokenCount.textContent = m.content_tokens; // Exact final count
             } else if (data.type === "error") {
               responseOutput.textContent = `Error: ${data.message}`;
             }

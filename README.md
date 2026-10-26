@@ -88,13 +88,6 @@ LLM-Benchmarks/
 │   │   ├── endpoint_store.py       # JSON file store for endpoints
 │   │   ├── template_store.py       # JSON file store for user prompt templates
 │   │   └── metrics.py              # ITL, percentiles & throughput computation
-│   └── static/
-│       ├── index.html              # Main playground & PDF benchmark studio
-│       ├── app.js                  # SSE stream parser & multi-page gallery
-│       ├── batch.html              # Batch benchmark UI
-│       ├── batch.js                # Batch evaluation streamer
-│       ├── decisions.html          # Structured Decisions studio UI
-│       └── decisions.js            # /v1/systemone runner & distribution visualizer
 ├── data/
 │   ├── endpoints.json              # Configured inference endpoints
 │   ├── templates.json              # User custom benchmark templates
@@ -102,6 +95,13 @@ LLM-Benchmarks/
 ├── Images/                         # Default test assets (OCR, sample docs, cats)
 ├── scripts/
 │   └── build_deb.sh                # Linux packaging script
+├── static/
+│   ├── benchmark.html              # Main playground & PDF benchmark studio
+│   ├── benchmark.js                # SSE stream parser & multi-page gallery
+│   └── batch.html              	# Batch benchmark UI
+│   ├── batch.js                	# Batch evaluation streamer
+│   ├── decisions.html          	# Structured Decisions studio UI
+│   └── decisions.js            	# /v1/systemone runner & distribution visualizer
 ├── run_app.py                      # Standalone native desktop launcher
 ├── requirements.txt 				# Python dependencies
 └── README.md
@@ -176,10 +176,10 @@ Build a single-file executable using PyInstaller:
 
 ```bash
 pyinstaller --noconfirm --onefile --windowed \
-  --name "LLM_Benchmarking_Studio_v1.2.0" \
+  --name "LLM_Benchmarking_Studio_v1.3.0" \
   --distpath "releases" \
   --icon "assets/app_icon.ico" \
-  --add-data "app/static;app/static" \
+  --add-data "static;static" \
   --add-data "Images;Images" \
   --add-data "data;data" \
   --add-data "assets;assets" \
@@ -209,20 +209,20 @@ chmod +x scripts/build_deb.sh
 This freezes the application, bundles all static assets, and builds a Debian `.deb` package with desktop integration and icon registration.
 
 The output package will be created at:
-`releases/llm-benchmarking-studio_1.2.0_amd64.deb`
+`releases/llm-benchmarking-studio_1.3.0_amd64.deb`
 
 #### 2. Install the `.deb` package on Ubuntu / Debian:
 
 Install using `apt` so all required system runtime dependencies (WebKitGTK) are automatically resolved:
 
 ```bash
-sudo apt install ./releases/llm-benchmarking-studio_1.2.0_amd64.deb
+sudo apt install ./releases/llm-benchmarking-studio_1.3.0_amd64.deb
 ```
 
 *(Alternative using dpkg)*:
 
 ```bash
-sudo dpkg -i releases/llm-benchmarking-studio_1.2.0_amd64.deb
+sudo dpkg -i releases/llm-benchmarking-studio_1.3.0_amd64.deb
 sudo apt-get install -f.
 ```
 

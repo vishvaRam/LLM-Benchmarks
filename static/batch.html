@@ -48,10 +48,15 @@
       </h1>
     </div>
     <div class="flex items-center space-x-2">
+      <a href="/tools"
+        class="text-xs bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-700 px-3 py-1.5 rounded transition flex items-center gap-1.5">
+        <span>Tool Calling &rarr;</span>
+      </a>
       <a href="/"
         class="text-xs bg-surface-700 hover:bg-surface-600 text-slate-300 px-3 py-1.5 rounded border border-surface-600 transition">
         &larr; Playground
       </a>
+      
     </div>
   </header>
 
@@ -138,6 +143,21 @@
             <label class="block text-xs text-slate-400 mb-1"># of Samples</label>
             <input type="number" id="numSamples" value="10" min="1" max="100"
               class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-2 border-t border-surface-700/60">
+          <div class="flex items-center space-x-2 pt-4">
+            <input type="checkbox" id="shuffleToggle" checked
+              class="w-4 h-4 text-indigo-500 rounded bg-surface-900 border-surface-600 cursor-pointer">
+            <label for="shuffleToggle" class="text-xs text-slate-300 cursor-pointer select-none">
+              Randomize Samples (Shuffle)
+            </label>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Seed (optional)</label>
+            <input type="number" id="hfSeed" placeholder="e.g. 42 (leave blank for random)"
+              class="w-full bg-surface-900 border border-surface-600 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500">
           </div>
         </div>
 

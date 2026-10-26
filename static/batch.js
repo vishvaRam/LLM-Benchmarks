@@ -11,6 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const hfSplit = document.getElementById("hfSplit");
   const hfColumn = document.getElementById("hfColumn");
   const numSamples = document.getElementById("numSamples");
+  const shuffleToggle = document.getElementById("shuffleToggle");
+  const hfSeed = document.getElementById("hfSeed");
   const startBatchBtn = document.getElementById("startBatchBtn");
 
   const progressSection = document.getElementById("progressSection");
@@ -53,10 +55,11 @@ document.addEventListener("DOMContentLoaded", () => {
       ep.models.forEach((m) => {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "text-[11px] bg-surface-700 hover:bg-surface-600 text-slate-300 px-2 py-0.5 rounded border border-surface-600 flex items-center gap-1";
+        btn.className =
+          "text-[11px] bg-surface-700 hover:bg-surface-600 text-slate-300 px-2 py-0.5 rounded border border-surface-600 flex items-center gap-1";
         btn.innerHTML = `
           <span>${m.display_name || m.id}</span>
-          ${m.supports_thinking ? '<span class="text-[9px] text-purple-400 font-mono bg-purple-950/80 px-1 rounded border border-purple-800/60">think</span>' : ''}
+          ${m.supports_thinking ? '<span class="text-[9px] text-purple-400 font-mono bg-purple-950/80 px-1 rounded border border-purple-800/60">think</span>' : ""}
         `;
         btn.onclick = () => {
           modelInput.value = m.id;
@@ -96,6 +99,10 @@ document.addEventListener("DOMContentLoaded", () => {
     progressBar.style.width = "0%";
     batchStatusText.textContent = "Connecting...";
 
+    const rawSeed = hfSeed?.value.trim();
+    const seedVal =
+      rawSeed !== "" && !isNaN(parseInt(rawSeed)) ? parseInt(rawSeed) : null;
+
     const payload = {
       endpoint_id: epId,
       parameters: {
@@ -113,6 +120,8 @@ document.addEventListener("DOMContentLoaded", () => {
         split: hfSplit.value.trim(),
         prompt_column: hfColumn.value.trim(),
         num_samples: parseInt(numSamples.value),
+        shuffle: shuffleToggle ? shuffleToggle.checked : true,
+        seed: seedVal,
       },
     };
 
@@ -145,7 +154,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (data.type === "status") {
               batchStatusText.textContent = data.message;
-              if (data.total) batchProgressCount.textContent = `0 / ${data.total}`;
+              if (data.total)
+                batchProgressCount.textContent = `0 / ${data.total}`;
             } else if (data.type === "sample_completed") {
               const res = data.result;
               const pct = (data.completed / data.total) * 100;
@@ -163,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td class="p-3 text-emerald-400">${res.ttft_ms} ms</td>
                 <td class="p-3 text-sky-400">${res.throughput_tokens_per_sec}</td>
                 <td class="p-3 text-purple-300">${res.output_tokens}</td>
-                <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${res.status === 'success' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-red-950 text-red-400 border border-red-800'}">${res.status}</span></td>
+                <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${res.status === "success" ? "bg-emerald-950 text-emerald-400 border border-emerald-800" : "bg-red-950 text-red-400 border border-red-800"}">${res.status}</span></td>
               `;
               resultsTableBody.appendChild(row);
             } else if (data.type === "batch_finished") {
@@ -192,7 +202,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function escapeHtml(str) {
     if (!str) return "";
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   }
 
   initEndpoints();

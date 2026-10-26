@@ -7,7 +7,7 @@ cd "$PROJECT_ROOT"
 
 APP_NAME="llm-benchmarking-studio"
 APP_DISPLAY_NAME="LLM Benchmarking Studio"
-VERSION="1.2.0"
+VERSION="1.3.0"
 ARCH="amd64"
 DEB_NAME="${APP_NAME}_${VERSION}_${ARCH}.deb"
 
@@ -27,7 +27,7 @@ echo "==> Freezing application with PyInstaller..."
 pyinstaller --noconfirm --onedir --windowed \
     --name "${APP_NAME}" \
     --specpath "${BUILD_DIR}" \
-    --add-data "${PROJECT_ROOT}/app/static:app/static" \
+    --add-data "${PROJECT_ROOT}/static:static" \
     --add-data "${PROJECT_ROOT}/Images:Images" \
     --add-data "${PROJECT_ROOT}/data:data" \
     --add-data "${PROJECT_ROOT}/assets:assets" \
@@ -73,8 +73,8 @@ Version: ${VERSION}
 Section: utils
 Priority: optional
 Architecture: ${ARCH}
-Depends: python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.1
-Maintainer: Vishva Ramamurthy
+Depends: python3-gi, gir1.2-gtk-3.0, gir1.2-webkit2-4.1, libglib2.0-dev, libgirepository-2.0-dev, pkg-config
+Maintainer: Vishva Ram
 Description: LLM & VLM Benchmarking Studio
  Standalone native desktop telemetry and benchmark studio for LLMs and VLMs.
 EOF

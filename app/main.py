@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
-from app.routers import batch, benchmark, decisions, endpoints, templates
+from app.routers import batch, benchmark, decisions, endpoints, templates, tools
 
 app = FastAPI(
     title="LLM & VLM Benchmark API",
@@ -17,6 +17,7 @@ app.include_router(benchmark.router)
 app.include_router(templates.router)
 app.include_router(decisions.router)
 app.include_router(batch.router)
+app.include_router(tools.router)
 
 # Base directory that works both in development and inside PyInstaller bundle
 if getattr(sys, "frozen", False):
@@ -26,7 +27,7 @@ else:
 
 from fastapi.staticfiles import StaticFiles
 
-STATIC_DIR = BASE_DIR / "app" / "static"
+STATIC_DIR = BASE_DIR / "static"
 IMAGES_DIR = BASE_DIR / "Images"
 ASSETS_DIR = BASE_DIR / "assets"
 
@@ -42,7 +43,7 @@ if ASSETS_DIR.exists():
 
 @app.get("/", include_in_schema=False)
 async def serve_index():
-    return FileResponse(STATIC_DIR / "index.html")
+    return FileResponse(STATIC_DIR / "benchmark.html")
 
 
 @app.get("/batch", include_in_schema=False)
@@ -53,6 +54,11 @@ async def serve_batch_page():
 @app.get("/decisions")
 async def decisions_page():
     return FileResponse(STATIC_DIR / "decisions.html")
+
+
+@app.get("/tools")
+async def serve_tools_page():
+    return FileResponse(STATIC_DIR / "tools.html")
 
 
 @app.get("/health")

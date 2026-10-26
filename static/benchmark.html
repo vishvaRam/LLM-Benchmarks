@@ -51,7 +51,6 @@
 <body class="bg-surface-900 text-slate-100 min-h-screen font-sans flex flex-col">
 
   <!-- Header -->
-  <!-- Header -->
   <header
     class="border-b border-surface-700 bg-surface-800/80 backdrop-blur px-6 py-3 flex items-center justify-between sticky top-0 z-50">
 
@@ -82,6 +81,10 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
         <span>Decision &rarr;</span>
+      </a>
+      <a href="/tools"
+        class="text-xs bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-700 px-3 py-1.5 rounded transition flex items-center gap-1.5">
+        <span>Tool Calling &rarr;</span>
       </a>
 
       <a href="/batch"
@@ -306,24 +309,24 @@
               </label>
 
               <div class="flex items-center gap-1.5 text-xs text-slate-300">
-              <label for="pdfDpiSelect" class="text-slate-400">DPI:</label>
-              <div class="relative">
-                <select
-                  id="pdfDpiSelect"
-                  class="appearance-none bg-surface-900 border border-surface-600 hover:border-surface-500 rounded px-2.5 py-1 pr-6 text-xs text-slate-200 font-mono focus:outline-none focus:border-emerald-500 cursor-pointer"
-                >
-                  <option value="100">100 (Fast)</option>
-                  <option value="150">150 (Std)</option>
-                  <option value="200">200 (High)</option>
-                  <option value="250" selected>250 (Fine)</option>
-                  <option value="300">300 (OCR)</option>
-                  <option value="350">350 (Max)</option>
-                </select>
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-slate-400">
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <label for="pdfDpiSelect" class="text-slate-400">DPI:</label>
+                <div class="relative">
+                  <select id="pdfDpiSelect"
+                    class="appearance-none bg-surface-900 border border-surface-600 hover:border-surface-500 rounded px-2.5 py-1 pr-6 text-xs text-slate-200 font-mono focus:outline-none focus:border-emerald-500 cursor-pointer">
+                    <option value="100">100 (Fast)</option>
+                    <option value="150">150 (Std)</option>
+                    <option value="200">200 (High)</option>
+                    <option value="250" selected>250 (Fine)</option>
+                    <option value="300">300 (OCR)</option>
+                    <option value="350">350 (Max)</option>
+                  </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-slate-400">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
                 </div>
               </div>
-            </div>
             </div>
 
             <div id="pdfLimitWrapper" class="hidden items-center gap-1.5 text-xs text-slate-300">
@@ -377,11 +380,25 @@
 
         <div class="bg-surface-800 border border-surface-700 rounded-lg p-4">
           <div class="flex items-center justify-between mb-2">
-            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Model Output</h3>
-            <span id="finishBadge" class="text-[10px] font-mono text-slate-500"></span>
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <span>Model Output</span>
+              <span class="text-slate-500 font-mono font-normal text-[11px]">(<span id="contentTokenCount">0</span>
+                tokens)</span>
+            </h3>
+            <div class="flex items-center gap-2">
+              <span id="finishBadge" class="text-[10px] font-mono text-slate-500"></span>
+              <button id="copyOutputBtn" type="button" title="Copy output or error"
+                class="text-[11px] bg-surface-700 hover:bg-surface-600 text-slate-300 border border-surface-600 hover:border-slate-500 px-2 py-0.5 rounded transition flex items-center gap-1 cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span id="copyOutputText">Copy</span>
+              </button>
+            </div>
           </div>
           <pre id="responseOutput"
-            class="text-sm font-mono text-slate-200 whitespace-pre-wrap bg-surface-900 p-4 rounded border border-surface-700/60 min-h-[160px] max-h-[400px] overflow-y-auto">Benchmark results will appear here...</pre>
+            class="text-sm font-mono text-slate-200 whitespace-pre-wrap bg-surface-900 p-4 rounded border border-surface-700/60 min-h-[160px] max-h-[400px] overflow-y-auto select-text">Benchmark results will appear here...</pre>
         </div>
       </div>
 
@@ -403,11 +420,6 @@
       </div>
 
       <div class="space-y-3">
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">ID (unique identifier)</label>
-          <input type="text" id="epId" placeholder="e.g. vllm-prod"
-            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-sm text-slate-200">
-        </div>
         <div>
           <label class="block text-xs text-slate-400 mb-1">Display Name</label>
           <input type="text" id="epName" placeholder="e.g. Production vLLM Instance"
@@ -441,7 +453,7 @@
               <span class="text-emerald-400 font-medium">Supports Thinking / Reasoning</span>
             </label>
             <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
-              <input type="checkbox" id="epIsVlm"
+              <input type="checkbox" id="epIsVlm" checked
                 class="w-4 h-4 text-emerald-500 rounded bg-surface-900 border-surface-600">
               <span>Vision Model (VLM)</span>
             </label>
@@ -474,70 +486,64 @@
       </div>
 
       <div class="space-y-3">
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Preset ID (unique slug)</label>
-            <input type="text" id="tplId" placeholder="e.g. summarize_contract"
-              class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200">
-          </div>
+        <div class="space-y-3">
           <div>
             <label class="block text-xs text-slate-400 mb-1">Display Name</label>
             <input type="text" id="tplName" placeholder="e.g. Contract Summary"
+              class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Category</label>
+            <input type="text" id="tplCategory" placeholder="e.g. Legal / Reasoning / Coding"
+              class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">System Prompt (optional)</label>
+            <input type="text" id="tplSystemPrompt" placeholder="You are an expert legal assistant."
               class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200">
           </div>
-        </div>
 
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">Category</label>
-          <input type="text" id="tplCategory" placeholder="e.g. Legal / Reasoning / Coding"
-            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200">
-        </div>
-
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">System Prompt (optional)</label>
-          <input type="text" id="tplSystemPrompt" placeholder="You are an expert legal assistant."
-            class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200">
-        </div>
-
-        <div>
-          <label class="block text-xs text-slate-400 mb-1">Prompt Template</label>
-          <textarea id="tplTemplate" rows="4" placeholder="Enter the prompt here..."
-            class="w-full bg-surface-900 border border-surface-600 rounded p-2.5 text-xs text-slate-200 font-mono"></textarea>
-        </div>
-        <div class="space-y-2 pt-1 border-t border-surface-700">
-          <label class="block text-xs text-slate-400">Sample Attachment (Optional Image / PDF)</label>
-          <div class="flex gap-2">
-            <label
-              class="bg-surface-700 hover:bg-surface-600 border border-surface-600 text-slate-200 text-xs px-3 py-1.5 rounded cursor-pointer transition flex items-center gap-1 shrink-0">
-              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span id="tplUploadLabel">Upload File</span>
-              <input type="file" id="tplFileInput" accept="image/*,application/pdf" class="hidden">
-            </label>
-            <input type="text" id="tplImageUrl" placeholder="Or paste Image URL / Base64..."
-              class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200 font-mono truncate">
-            <button type="button" id="tplClearMediaBtn"
-              class="text-xs text-slate-400 hover:text-red-400 px-2 hidden">&times; Clear</button>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Prompt Template</label>
+            <textarea id="tplTemplate" rows="4" placeholder="Enter the prompt here..."
+              class="w-full bg-surface-900 border border-surface-600 rounded p-2.5 text-xs text-slate-200 font-mono"></textarea>
           </div>
-          <div id="tplMediaPreview"
-            class="hidden text-xs text-emerald-400 font-mono bg-surface-900 p-2 rounded border border-surface-700">
-            <span id="tplMediaMeta"></span>
+          <div class="space-y-2 pt-1 border-t border-surface-700">
+            <label class="block text-xs text-slate-400">Sample Attachment (Optional Image / PDF)</label>
+            <div class="flex gap-2">
+              <label
+                class="bg-surface-700 hover:bg-surface-600 border border-surface-600 text-slate-200 text-xs px-3 py-1.5 rounded cursor-pointer transition flex items-center gap-1 shrink-0">
+                <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span id="tplUploadLabel">Upload File</span>
+                <input type="file" id="tplFileInput" accept="image/*,application/pdf" class="hidden">
+              </label>
+              <input type="text" id="tplImageUrl" placeholder="Or paste Image URL / Base64..."
+                class="w-full bg-surface-900 border border-surface-600 rounded px-3 py-1.5 text-xs text-slate-200 font-mono truncate">
+              <button type="button" id="tplClearMediaBtn"
+                class="text-xs text-slate-400 hover:text-red-400 px-2 hidden">&times; Clear</button>
+            </div>
+            <div id="tplMediaPreview"
+              class="hidden text-xs text-emerald-400 font-mono bg-surface-900 p-2 rounded border border-surface-700">
+              <span id="tplMediaMeta"></span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="flex justify-end gap-2 pt-2">
-        <button id="saveTemplateBtn"
-          class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded font-medium transition">
-          Save to data/templates.json
-        </button>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="saveTemplateBtn"
+            class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded font-medium transition">
+            Save to data/templates.json
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script src="/static/app.js"></script>
+    <script src="/static/benchmark.js"></script>
 </body>
 
 </html>

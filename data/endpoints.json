@@ -2,14 +2,14 @@
   "endpoints": [
     {
       "id": "vllm",
-      "name": "vllm",
-      "base_url": "http://213.173.105.26:18278/v1",
+      "name": "vLLM",
+      "base_url": "http://213.192.2.85:40034/v1",
       "api_key": "none",
       "headers": null,
       "models": [
         {
-          "id": "Vishva007/Qwen3.5-9B-NVFP4",
-          "display_name": "Vishva007/Qwen3.5-9B-NVFP4",
+          "id": "Vishva007/Qwen3.5-9B-W4A16-AutoRound-GPTQ",
+          "display_name": "Vishva007/Qwen3.5-9B-W4A16-AutoRound-GPTQ",
           "is_vlm": true,
           "context_window": 32768,
           "supports_thinking": true
