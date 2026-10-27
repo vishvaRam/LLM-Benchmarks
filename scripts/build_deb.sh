@@ -7,7 +7,7 @@ cd "$PROJECT_ROOT"
 
 APP_NAME="llm-benchmarking-studio"
 APP_DISPLAY_NAME="LLM Benchmarking Studio"
-VERSION="1.3.0"
+VERSION="1.4.0"
 ARCH="amd64"
 DEB_NAME="${APP_NAME}_${VERSION}_${ARCH}.deb"
 

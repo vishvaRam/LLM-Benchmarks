@@ -43,6 +43,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const copyArgsBtn = document.getElementById("copyArgsBtn");
   const copyRawBtn = document.getElementById("copyRawBtn");
+  const inspectThinkingContainer = document.getElementById("inspectThinkingContainer");
+  const inspectThinking = document.getElementById("inspectThinking");
+  const copyThinkingBtn = document.getElementById("copyThinkingBtn");
+
+  setupCopyBtn(copyThinkingBtn, inspectThinking);
 
   let endpoints = [];
   let evaluatedResults = {};
@@ -52,9 +57,11 @@ document.addEventListener("DOMContentLoaded", () => {
   presetButtons.forEach((btn) => {
     btn.onclick = () => {
       presetButtons.forEach((b) => {
-        b.className = "preset-btn text-[11px] bg-surface-700 hover:bg-surface-600 border border-surface-600 px-2.5 py-1 rounded text-amber-300 transition";
+        b.className =
+          "preset-btn text-[11px] bg-surface-700 hover:bg-surface-600 border border-surface-600 px-2.5 py-1 rounded text-amber-300 transition";
       });
-      btn.className = "preset-btn text-[11px] bg-amber-600 text-white font-medium border border-amber-500 px-2.5 py-1 rounded transition";
+      btn.className =
+        "preset-btn text-[11px] bg-amber-600 text-white font-medium border border-amber-500 px-2.5 py-1 rounded transition";
 
       datasetName.value = btn.dataset.ds;
       datasetSplit.value = btn.dataset.split;
@@ -67,7 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch("/endpoints/");
       endpoints = await res.json();
-      endpointSelect.innerHTML = '<option value="" disabled selected>Select an endpoint...</option>';
+      endpointSelect.innerHTML =
+        '<option value="" disabled selected>Select an endpoint...</option>';
       endpoints.forEach((ep) => {
         const opt = document.createElement("option");
         opt.value = ep.id;
@@ -90,9 +98,12 @@ document.addEventListener("DOMContentLoaded", () => {
       ep.models.forEach((m) => {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "text-[11px] bg-surface-700 hover:bg-surface-600 text-slate-300 px-2 py-0.5 rounded border border-surface-600 flex items-center gap-1 cursor-pointer";
+        btn.className =
+          "text-[11px] bg-surface-700 hover:bg-surface-600 text-slate-300 px-2 py-0.5 rounded border border-surface-600 flex items-center gap-1 cursor-pointer";
         btn.textContent = m.display_name || m.id;
-        btn.onclick = () => { modelInput.value = m.id; };
+        btn.onclick = () => {
+          modelInput.value = m.id;
+        };
         modelChips.appendChild(btn);
       });
     }
@@ -136,7 +147,9 @@ document.addEventListener("DOMContentLoaded", () => {
         await navigator.clipboard.writeText(text);
         const original = btn.textContent;
         btn.textContent = "Copied!";
-        setTimeout(() => { btn.textContent = original; }, 1200);
+        setTimeout(() => {
+          btn.textContent = original;
+        }, 1200);
       } catch (err) {
         const textarea = document.createElement("textarea");
         textarea.value = text;
@@ -146,7 +159,9 @@ document.addEventListener("DOMContentLoaded", () => {
         document.body.removeChild(textarea);
         const original = btn.textContent;
         btn.textContent = "Copied!";
-        setTimeout(() => { btn.textContent = original; }, 1200);
+        setTimeout(() => {
+          btn.textContent = original;
+        }, 1200);
       }
     };
   }
@@ -173,7 +188,8 @@ document.addEventListener("DOMContentLoaded", () => {
         : "font-bold text-red-400 text-sm truncate";
     } else {
       inspectActual.textContent = "No tool called (Text response)";
-      inspectActual.className = "font-bold text-slate-500 text-sm italic truncate";
+      inspectActual.className =
+        "font-bold text-slate-500 text-sm italic truncate";
     }
 
     // Arguments Display
@@ -203,13 +219,27 @@ document.addEventListener("DOMContentLoaded", () => {
     // Status Badges
     if (res.status === "correct") {
       inspectBadge.textContent = "CORRECT CALL";
-      inspectBadge.className = "text-xs font-mono px-2.5 py-0.5 rounded font-bold uppercase bg-emerald-950 text-emerald-400 border border-emerald-800";
+      inspectBadge.className =
+        "text-xs font-mono px-2.5 py-0.5 rounded font-bold uppercase bg-emerald-950 text-emerald-400 border border-emerald-800";
     } else if (res.status === "incorrect") {
-      inspectBadge.textContent = res.called_tool ? "WRONG ARGUMENTS / NAME" : "NO TOOL CALLED";
-      inspectBadge.className = "text-xs font-mono px-2.5 py-0.5 rounded font-bold uppercase bg-red-950 text-red-400 border border-red-800";
+      inspectBadge.textContent = res.called_tool
+        ? "WRONG ARGUMENTS / NAME"
+        : "NO TOOL CALLED";
+      inspectBadge.className =
+        "text-xs font-mono px-2.5 py-0.5 rounded font-bold uppercase bg-red-950 text-red-400 border border-red-800";
     } else {
       inspectBadge.textContent = "EXECUTION ERROR";
-      inspectBadge.className = "text-xs font-mono px-2.5 py-0.5 rounded font-bold uppercase bg-amber-950 text-amber-400 border border-amber-800";
+      inspectBadge.className =
+        "text-xs font-mono px-2.5 py-0.5 rounded font-bold uppercase bg-amber-950 text-amber-400 border border-amber-800";
+    }
+
+    // Thinking Trace Display
+    if (res.thinking_trace && res.thinking_trace.trim() !== "") {
+      inspectThinkingContainer.classList.remove("hidden");
+      inspectThinking.textContent = res.thinking_trace;
+    } else {
+      inspectThinkingContainer.classList.add("hidden");
+      inspectThinking.textContent = "";
     }
 
     inspectModal.classList.remove("hidden");
@@ -239,14 +269,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const box = document.createElement("button");
       box.id = `box-${i}`;
       box.type = "button";
-      box.className = "h-11 w-full rounded flex items-center justify-center font-mono font-bold text-xs bg-surface-700 border border-surface-600 text-slate-400 transition transform hover:scale-105 cursor-pointer";
+      box.className =
+        "h-11 w-full rounded flex items-center justify-center font-mono font-bold text-xs bg-surface-700 border border-surface-600 text-slate-400 transition transform hover:scale-105 cursor-pointer";
       box.textContent = i;
       box.onclick = () => openInspect(i);
       gridContainer.appendChild(box);
     }
 
     const rawSeed = evalSeed.value.trim();
-    const parsedSeed = rawSeed !== "" && !isNaN(parseInt(rawSeed)) ? parseInt(rawSeed) : null;
+    const parsedSeed =
+      rawSeed !== "" && !isNaN(parseInt(rawSeed)) ? parseInt(rawSeed) : null;
+
+    const thinkingToggle = document.getElementById("thinkingToggle");
 
     const payload = {
       endpoint_id: epId,
@@ -254,6 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
         model: model,
         max_tokens: parseInt(maxTokens.value),
       },
+      enable_thinking: thinkingToggle ? thinkingToggle.checked : false,
       concurrency_limit: parseInt(concurrencyInput.value),
       dataset: {
         dataset_name: datasetName.value.trim(),
@@ -304,23 +339,28 @@ document.addEventListener("DOMContentLoaded", () => {
               const box = document.getElementById(`box-${res.index}`);
               if (box) {
                 if (res.status === "correct") {
-                  box.className = "h-11 w-full rounded flex items-center justify-center font-mono font-bold text-xs bg-emerald-600 border border-emerald-400 text-white shadow-lg transition transform hover:scale-105 cursor-pointer";
+                  box.className =
+                    "h-11 w-full rounded flex items-center justify-center font-mono font-bold text-xs bg-emerald-600 border border-emerald-400 text-white shadow-lg transition transform hover:scale-105 cursor-pointer";
                 } else if (res.status === "incorrect") {
-                  box.className = "h-11 w-full rounded flex items-center justify-center font-mono font-bold text-xs bg-red-600 border border-red-400 text-white shadow-lg transition transform hover:scale-105 cursor-pointer";
+                  box.className =
+                    "h-11 w-full rounded flex items-center justify-center font-mono font-bold text-xs bg-red-600 border border-red-400 text-white shadow-lg transition transform hover:scale-105 cursor-pointer";
                 } else {
-                  box.className = "h-11 w-full rounded flex items-center justify-center font-mono font-bold text-xs bg-amber-600 border border-amber-400 text-white shadow-lg transition transform hover:scale-105 cursor-pointer";
+                  box.className =
+                    "h-11 w-full rounded flex items-center justify-center font-mono font-bold text-xs bg-amber-600 border border-amber-400 text-white shadow-lg transition transform hover:scale-105 cursor-pointer";
                 }
               }
 
               const completedList = Object.values(evaluatedResults);
-              const correctSoFar = completedList.filter((r) => r.status === "correct").length;
+              const correctSoFar = completedList.filter(
+                (r) => r.status === "correct",
+              ).length;
               statFraction.textContent = `${correctSoFar} / ${completedList.length} correct`;
               statAccuracy.textContent = `${((correctSoFar / completedList.length) * 100).toFixed(1)}%`;
-
             } else if (data.type === "benchmark_finished") {
               const s = data.summary;
               statStatus.textContent = "Finished";
-              statStatus.className = "text-2xl font-mono font-bold text-emerald-400 mt-1";
+              statStatus.className =
+                "text-2xl font-mono font-bold text-emerald-400 mt-1";
               statAccuracy.textContent = `${s.accuracy_pct}%`;
               statFraction.textContent = `${s.correct_count} / ${s.total_samples} correct`;
               statTtft.textContent = `${s.avg_ttft_ms} ms`;
@@ -328,7 +368,8 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (data.type === "error") {
               alert(data.message);
               statStatus.textContent = "Error";
-              statStatus.className = "text-2xl font-mono font-bold text-red-400 mt-1";
+              statStatus.className =
+                "text-2xl font-mono font-bold text-red-400 mt-1";
             }
           } catch (e) {
             console.error("Parse error", e);

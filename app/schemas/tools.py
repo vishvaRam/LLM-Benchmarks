@@ -23,6 +23,7 @@ class ToolCallBenchmarkRequest(BaseModel):
     parameters: BenchmarkParameters
     concurrency_limit: int = Field(default=4, ge=1, le=16)
     dataset: ToolCallBenchmarkDatasetConfig
+    enable_thinking: bool = False
 
 
 class ToolCallSampleResult(BaseModel):
@@ -38,6 +39,7 @@ class ToolCallSampleResult(BaseModel):
     total_latency_ms: float
     throughput_tps: float
     output_tokens: int
+    thinking_trace: str | None = None
     raw_response: str
     status: str  # "correct" | "incorrect" | "error"
     error_message: str | None = None

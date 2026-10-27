@@ -317,6 +317,22 @@ class ToolBenchmarkService:
             async with semaphore:
                 t0 = time.perf_counter()
                 try:
+                    # Match the working playground parameters for vLLM/SGLang reasoning
+                    extra_body: dict[str, Any] = {}
+                    if req.enable_thinking:
+                        extra_body["enable_thinking"] = True
+                        extra_body["chat_template_kwargs"] = {
+                            "enable_thinking": True,
+                            "thinking": True,
+                            "reasoning_effort": "high",
+                        }
+                    else:
+                        extra_body["enable_thinking"] = False
+                        extra_body["chat_template_kwargs"] = {
+                            "enable_thinking": False,
+                            "thinking": False,
+                        }
+
                     res = await client.chat.completions.create(
                         model=req.parameters.model,
                         messages=[{"role": "user", "content": prompt_text}],
@@ -324,12 +340,15 @@ class ToolBenchmarkService:
                         tool_choice="auto",
                         temperature=0.0,
                         max_tokens=req.parameters.max_tokens or 1024,
+                        extra_body=extra_body,
                     )
                     t_end = time.perf_counter()
                     total_latency_ms = (t_end - t0) * 1000.0
 
                     choice = res.choices[0]
                     message = choice.message
+                    model_extra = getattr(message, "model_extra", None) or {}
+                    msg_dict = message.model_dump() if hasattr(message, "model_dump") else {}
                     output_tokens = res.usage.completion_tokens if res.usage else 0
                     tps = (output_tokens / (total_latency_ms / 1000.0)) if total_latency_ms > 0 else 0.0
 
@@ -363,6 +382,25 @@ class ToolBenchmarkService:
 
                     status = "correct" if is_correct else "incorrect"
 
+                    # 1. Extract Thinking / Reasoning (attribute, model_extra, or model_dump)
+                    thinking_trace: str | None = (
+                        getattr(message, "reasoning_content", None)
+                        or getattr(message, "reasoning", None)
+                        or model_extra.get("reasoning_content")
+                        or model_extra.get("reasoning")
+                        or msg_dict.get("reasoning_content")
+                        or msg_dict.get("reasoning")
+                    )
+
+                    content_str = message.content or ""
+
+                    # Fallback check for <think> tags if printed inline inside content
+                    if not thinking_trace and "<think>" in content_str:
+                        think_match = re.search(r"<think>(.*?)(?:</think>|$)", content_str, re.DOTALL)
+                        if think_match:
+                            thinking_trace = think_match.group(1).strip()
+
+                    # 2. Extract Raw Payload (Tool Calls + Remaining Assistant Content)
                     serialized_raw = ""
                     if message.tool_calls:
                         clean_calls = [
@@ -374,8 +412,11 @@ class ToolBenchmarkService:
                             for tc in message.tool_calls
                         ]
                         serialized_raw = json.dumps(clean_calls, indent=2)
-                    elif message.content:
-                        serialized_raw = message.content
+                        cleaned_content = re.sub(r"<think>.*?</think>", "", content_str, flags=re.DOTALL).strip()
+                        if cleaned_content:
+                            serialized_raw += f"\n\n/* Assistant Text */\n{cleaned_content}"
+                    elif content_str:
+                        serialized_raw = re.sub(r"<think>.*?</think>", "", content_str, flags=re.DOTALL).strip()
 
                     return ToolCallSampleResult(
                         index=idx,
@@ -390,6 +431,7 @@ class ToolBenchmarkService:
                         total_latency_ms=round(total_latency_ms, 2),
                         throughput_tps=round(tps, 2),
                         output_tokens=output_tokens,
+                        thinking_trace=thinking_trace.strip() if thinking_trace else None,
                         raw_response=serialized_raw,
                         status=status,
                     )

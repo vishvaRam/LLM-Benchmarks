@@ -176,7 +176,7 @@ Build a single-file executable using PyInstaller:
 
 ```bash
 pyinstaller --noconfirm --onefile --windowed \
-  --name "LLM_Benchmarking_Studio_v1.3.0" \
+  --name "LLM_Benchmarking_Studio_v1.4.0" \
   --distpath "releases" \
   --icon "assets/app_icon.ico" \
   --add-data "static;static" \
@@ -216,17 +216,10 @@ The output package will be created at:
 Install using `apt` so all required system runtime dependencies (WebKitGTK) are automatically resolved:
 
 ```bash
-sudo apt install ./releases/llm-benchmarking-studio_1.3.0_amd64.deb
+sudo apt install ./releases/llm-benchmarking-studio_1.4.0_amd64.deb
 ```
 
-*(Alternative using dpkg)*:
-
-```bash
-sudo dpkg -i releases/llm-benchmarking-studio_1.3.0_amd64.deb
-sudo apt-get install -f.
-```
-
-#### 3. Launching the App:
+*(Alternative using dpkg)*:43. Launching the App:
 
 - Launch directly from your application launcher / desktop menu (**LLM Benchmarking Studio**)
 - Or from any terminal:

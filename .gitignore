@@ -9,4 +9,3 @@ LLM_Benchmarking_Studio_v1.0.0.spec
 *.py[cod]
 *$py.class
 data/
-data/endpoints.json
